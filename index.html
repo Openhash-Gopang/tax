@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>고팡 세무 — 제주 AI 납세 자동화 시스템</title>
+<meta name="description" content="고팡 재무제표 기반 AI가 분기 세금을 자동 계산하고 국세청에 납부합니다. 제주 시범 서비스.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=Noto+Serif+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gov:    #001845;
+  --nav:    #002D72;
+  --pri:    #0057A8;
+  --pri-lt: #006CC3;
+  --pri-bg: #EBF3FC;
+  --pri-bd: #B8D4F0;
+  --sur:    #FFFFFF;
+  --bg:     #F2F5FA;
+  --bdr:    #D1D9E6;
+  --txt:    #1A202C;
+  --sub:    #4A5568;
+  --hint:   #718096;
+  --grn:    #1B6B3A; --gbg:#E6F4EC; --gbd:#A3D9B8;
+  --red:    #C01C28; --rbg:#FEE2E2;
+  --org:    #C05621; --obg:#FEF3E2;
+  --pur:    #5B2D8E; --pbg:#F0EAF8;
+  --font: 'Noto Sans KR', sans-serif;
+  --serif: 'Noto Serif KR', serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --r: 8px;
+  --sh: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
+  --sh2: 0 4px 16px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);font-size:15px;color:var(--txt);background:var(--sur);-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+.container{max-width:1100px;margin:0 auto;padding:0 24px}
+
+/* ── GOV BAR ── */
+.gov-bar{background:var(--gov);color:rgba(255,255,255,.75);font-size:12px;padding:6px 0;text-align:center;letter-spacing:.3px}
+.gov-bar strong{color:#fff}
+
+/* ── NAV ── */
+.nav{background:var(--sur);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100;box-shadow:var(--sh)}
+.nav-inner{display:flex;align-items:center;height:60px;gap:28px}
+.nav-logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;color:var(--nav)}
+.nav-logo-icon{width:34px;height:34px;background:var(--pri);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900}
+.nav-links{display:flex;gap:4px;flex:1}
+.nav-links a{padding:6px 14px;border-radius:4px;font-size:13px;font-weight:500;color:var(--sub);transition:background .15s,color .15s}
+.nav-links a:hover{background:var(--pri-bg);color:var(--pri)}
+.nav-cta{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;border:none;transition:all .15s}
+.btn-pri{background:var(--pri);color:#fff}
+.btn-pri:hover{background:var(--pri-lt);box-shadow:var(--sh)}
+.btn-out{background:transparent;border:1.5px solid var(--pri);color:var(--pri)}
+.btn-out:hover{background:var(--pri-bg)}
+.btn-grn{background:var(--grn);color:#fff}
+.btn-grn:hover{background:#145530}
+.btn-lg{padding:13px 30px;font-size:15px;border-radius:6px}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(150deg,var(--gov) 0%,#002D72 60%,#003d9a 100%);color:#fff;padding:0;overflow:hidden;position:relative}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.hero-inner{display:flex;align-items:center;justify-content:space-between;gap:48px;padding:80px 0 72px;position:relative;z-index:1}
+.hero-left{flex:1;max-width:580px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;margin-bottom:24px;color:#fff}
+.hero-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.hero h1{font-family:var(--serif);font-size:clamp(28px,4.5vw,46px);font-weight:700;line-height:1.2;margin-bottom:18px;letter-spacing:-.5px}
+.hero h1 em{color:#90C4FF;font-style:normal}
+.hero-desc{font-size:16px;color:rgba(255,255,255,.80);max-width:480px;margin:0 0 32px;line-height:1.7}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.hero-links{display:flex;gap:20px;flex-wrap:wrap}
+.hero-link{font-size:12px;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:6px}
+.hero-link::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.hero-link:hover{color:rgba(255,255,255,.9)}
+.hero-stats{display:flex;gap:36px;margin-top:48px;flex-wrap:wrap}
+.hero-stat-val{font-size:28px;font-weight:800;color:#fff;font-family:var(--mono)}
+.hero-stat-lbl{font-size:11px;color:rgba(255,255,255,.55);margin-top:3px}
+
+/* 세금 계산기 목업 */
+.hero-right{flex-shrink:0;width:300px}
+.calc-mockup{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:20px;backdrop-filter:blur(8px)}
+.calc-title{font-size:12px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
+.calc-row:last-of-type{border-bottom:none}
+.calc-label{color:rgba(255,255,255,.6)}
+.calc-val{color:#fff;font-family:var(--mono);font-weight:600}
+.calc-val.total{color:#4ade80;font-size:16px}
+.calc-bar{background:rgba(255,255,255,.06);border-radius:6px;padding:12px 14px;margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.calc-bar-label{font-size:11px;color:rgba(255,255,255,.5)}
+.calc-btn{background:var(--grn);color:#fff;border:none;border-radius:4px;padding:7px 14px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer}
+
+/* ── SECTION COMMONS ── */
+.section{padding:80px 0}
+.section-alt{background:var(--bg)}
+.section-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--pri);margin-bottom:10px}
+.section-title{font-family:var(--serif);font-size:clamp(22px,3vw,32px);font-weight:700;letter-spacing:-.3px;margin-bottom:12px;color:var(--txt)}
+.section-desc{font-size:15px;color:var(--sub);max-width:540px;line-height:1.7}
+
+/* ── FLOW STEPS ── */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;margin-top:48px}
+.step-card{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);padding:24px 20px;box-shadow:var(--sh);position:relative}
+.step-num{width:32px;height:32px;background:var(--pri);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;margin-bottom:14px}
+.step-title{font-size:14px;font-weight:700;margin-bottom:6px;color:var(--txt)}
+.step-desc{font-size:13px;color:var(--sub);line-height:1.6}
+.step-arrow{position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:var(--bdr);font-size:20px;z-index:1}
+
+/* ── TAX TYPES ── */
+.tax-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+@media(max-width:860px){.tax-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.tax-grid{grid-template-columns:1fr}}
+.tax-card{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:28px 24px;box-shadow:var(--sh);transition:box-shadow .2s,transform .2s}
+.tax-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.tax-icon{font-size:32px;margin-bottom:14px}
+.tax-title{font-size:16px;font-weight:800;color:var(--txt);margin-bottom:4px}
+.tax-sub{font-size:13px;font-weight:600;color:var(--pri);margin-bottom:10px}
+.tax-desc{font-size:13px;color:var(--sub);line-height:1.65}
+.tax-rate{font-family:var(--mono);font-size:13px;font-weight:600;background:var(--pri-bg);color:var(--pri);border-radius:4px;padding:4px 10px;display:inline-block;margin-top:12px}
+
+/* ── BLOCKCHAIN RECORDS ── */
+.chain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:40px}
+@media(max-width:760px){.chain-grid{grid-template-columns:1fr}}
+.chain-card{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.chain-header{background:var(--nav);color:#fff;padding:14px 18px;font-size:13px;font-weight:700}
+.chain-body{padding:16px;font-family:var(--mono);font-size:12px}
+.chain-row{display:flex;gap:10px;margin-bottom:8px;line-height:1.5}
+.chain-row:last-child{margin-bottom:0}
+.chain-k{color:var(--hint);min-width:90px;flex-shrink:0;font-size:11px}
+.chain-v{color:var(--txt);word-break:break-all}
+.chain-v.hash{color:var(--pri)}
+.chain-v.ok{color:var(--grn)}
+
+/* ── DASHBOARD PREVIEW ── */
+.dash-preview{background:var(--bg);border:1px solid var(--bdr);border-radius:var(--r);padding:20px;box-shadow:var(--sh2);margin-top:40px;overflow:hidden}
+.dash-topbar{display:flex;align-items:center;justify-content:space-between;background:var(--sur);border:1px solid var(--bdr);border-radius:6px;padding:10px 16px;margin-bottom:16px}
+.dash-status{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--grn)}
+.dash-dot{width:7px;height:7px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite}
+.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:640px){.dash-stats{grid-template-columns:1fr 1fr}}
+.dash-stat{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 16px}
+.dash-stat-icon{font-size:18px;margin-bottom:6px}
+.dash-stat-val{font-size:20px;font-weight:800;color:var(--txt);font-family:var(--mono)}
+.dash-stat-lbl{font-size:11px;color:var(--sub);margin-top:2px}
+.dash-stat-sub{font-size:11px;color:var(--pri);margin-top:2px;font-weight:600}
+
+/* ── ACCESS ── */
+.access-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:40px}
+@media(max-width:640px){.access-grid{grid-template-columns:1fr}}
+.access-card{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:32px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:14px}
+.access-icon{font-size:36px}
+.access-title{font-size:18px;font-weight:800;color:var(--txt)}
+.access-desc{font-size:13px;color:var(--sub);line-height:1.6}
+.access-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.access-list li{font-size:13px;color:var(--txt);display:flex;align-items:center;gap:8px}
+.access-list li::before{content:'▸';color:var(--pri);font-size:11px}
+
+/* ── ROADMAP ── */
+.roadmap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:40px}
+@media(max-width:760px){.roadmap-grid{grid-template-columns:1fr}}
+.roadmap-card{border:1px solid var(--bdr);border-radius:var(--r);padding:24px;background:var(--bg)}
+.roadmap-phase{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--pri);margin-bottom:8px}
+.roadmap-title{font-size:16px;font-weight:800;margin-bottom:4px;color:var(--txt)}
+.roadmap-period{font-size:12px;color:var(--sub);margin-bottom:14px}
+.roadmap-list{list-style:none;display:flex;flex-direction:column;gap:7px}
+.roadmap-list li{font-size:13px;color:var(--txt);display:flex;align-items:flex-start;gap:8px}
+.roadmap-list li::before{content:'•';color:var(--pri);flex-shrink:0}
+
+/* ── FOOTER ── */
+.footer{background:var(--gov);color:rgba(255,255,255,.7);padding:48px 0 32px}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:32px;margin-bottom:40px}
+@media(max-width:760px){.footer-grid{grid-template-columns:1fr 1fr}}
+.footer-brand{font-size:16px;font-weight:800;color:#fff;margin-bottom:8px}
+.footer-brand-desc{font-size:12px;line-height:1.7;color:rgba(255,255,255,.45)}
+.footer-col-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.35);margin-bottom:14px}
+.footer-links{list-style:none;display:flex;flex-direction:column;gap:8px}
+.footer-links li a{font-size:13px;color:rgba(255,255,255,.55);transition:color .15s}
+.footer-links li a:hover{color:#fff}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:20px;font-size:12px;color:rgba(255,255,255,.35);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+
+/* ── FLOATING ── */
+.float-btn{position:fixed;bottom:32px;right:28px;z-index:9999;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;text-decoration:none}
+.float-btn-circle{width:60px;height:60px;background:linear-gradient(135deg,var(--pri),var(--pri-lt));border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,87,168,.45),0 0 0 0 rgba(0,87,168,.3);animation:fpulse 2.2s ease-in-out infinite;transition:transform .2s,box-shadow .2s}
+.float-btn:hover .float-btn-circle{transform:scale(1.12);animation-play-state:paused}
+.float-btn-icon{font-size:26px;line-height:1}
+.float-btn-label{background:rgba(0,45,114,.9);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;letter-spacing:.3px;white-space:nowrap}
+@keyframes fpulse{0%{box-shadow:0 4px 20px rgba(0,87,168,.45),0 0 0 0 rgba(0,87,168,.3)}40%{box-shadow:0 6px 28px rgba(0,87,168,.55),0 0 0 10px rgba(0,87,168,.12)}100%{box-shadow:0 4px 20px rgba(0,87,168,.45),0 0 0 20px rgba(0,87,168,.0)}}
+
+/* ── MOBILE ── */
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:8px;flex-direction:column;gap:5px}
+.nav-hamburger span{display:block;width:22px;height:2px;background:var(--nav);border-radius:2px;transition:all .25s}
+.nav-mobile-menu{display:none;flex-direction:column;background:var(--sur);border-top:1px solid var(--bdr);padding:8px 0}
+.nav-mobile-menu.open{display:flex}
+.nav-mobile-menu a{padding:12px 20px;font-size:14px;font-weight:500;color:var(--sub);border-bottom:1px solid var(--bg)}
+.nav-mobile-menu a:last-child{border-bottom:none}
+.nav-mobile-menu a:hover{background:var(--pri-bg);color:var(--pri)}
+@media(max-width:860px){.nav-links{display:none}.nav-hamburger{display:flex}.hero-right{display:none}.hero-inner{padding:56px 0 48px}.tax-grid{grid-template-columns:1fr 1fr}.chain-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.section{padding:48px 0}.hero h1{font-size:26px}.tax-grid{grid-template-columns:1fr}.hero-stats{gap:20px}.hero-stat-val{font-size:22px}.float-btn{bottom:20px;right:16px}}
+</style>
+</head>
+<body>
+
+<!-- GOV BAR -->
+<div class="gov-bar">
+  <strong>제주특별자치도</strong> 공식 AI 납세 자동화 시스템 &nbsp;|&nbsp; 고팡 재무제표 연동 시범 서비스
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="nav-logo-icon">税</div>
+      고팡 세무
+    </a>
+    <div class="nav-links">
+      <a href="#how">납세 흐름</a>
+      <a href="#tax-types">세금 종류</a>
+      <a href="#blockchain">블록체인 기록</a>
+      <a href="dashboard.html">관리자 대시보드</a>
+    </div>
+    <button class="nav-hamburger" onclick="toggleMenu()" id="hamburger">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-cta">
+      <a href="webapp.html" class="btn btn-grn">📱 납세 앱 열기</a>
+    </div>
+  </div>
+  <div class="nav-mobile-menu" id="mobileMenu">
+    <a href="#how" onclick="closeMenu()">납세 흐름</a>
+    <a href="#tax-types" onclick="closeMenu()">세금 종류</a>
+    <a href="#blockchain" onclick="closeMenu()">블록체인 기록</a>
+    <a href="dashboard.html" onclick="closeMenu()">관리자 대시보드</a>
+    <a href="webapp.html" onclick="closeMenu()" style="color:var(--grn);font-weight:700">📱 납세 앱 열기</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <div class="hero-left">
+        <div class="hero-badge"><div class="hero-dot"></div> AI 세금 계산 실시간 작동 중</div>
+        <h1>고팡 재무제표로<br><em>세금을 자동 계산</em>하고<br>국세청에 납부합니다</h1>
+        <p class="hero-desc">고팡 마켓·PDV 거래 기록을 AI가 분기별로 분류하여 소득세·부가가치세·법인세를 자동 계산합니다. 납세자는 확인 버튼 하나로 국세청에 신고·납부할 수 있습니다.</p>
+        <div class="hero-actions">
+          <a href="webapp.html" class="btn btn-grn btn-lg">📱 납세 앱 열기</a>
+          <a href="dashboard.html" class="btn btn-out btn-lg" style="color:#fff;border-color:rgba(255,255,255,.4)">🖥 관리자 대시보드</a>
+        </div>
+        <div class="hero-links">
+          <a href="webapp.html" class="hero-link">스마트폰에서 납세 앱 열기</a>
+          <a href="dashboard.html" class="hero-link">관리자 대시보드 (담당자 전용)</a>
+        </div>
+        <div class="hero-stats">
+          <div><div class="hero-stat-val">0.20%</div><div class="hero-stat-lbl">GDC 거래 수수료</div></div>
+          <div><div class="hero-stat-val">분기별</div><div class="hero-stat-lbl">자동 세금 계산</div></div>
+          <div><div class="hero-stat-val">∞</div><div class="hero-stat-lbl">OpenHash 납세 기록</div></div>
+        </div>
+      </div>
+
+      <!-- 세금 계산기 목업 -->
+      <div class="hero-right">
+        <div class="calc-mockup">
+          <div class="calc-title">2026년 2분기 세금 계산</div>
+          <div class="calc-row">
+            <span class="calc-label">총 매출</span>
+            <span class="calc-val">₮384,000</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">필요경비 (판관비)</span>
+            <span class="calc-val">₮768</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">과세표준 (소득)</span>
+            <span class="calc-val">₮383,232</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">부가가치세 (10%)</span>
+            <span class="calc-val">₮38,323</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">종합소득세 (6%)</span>
+            <span class="calc-val">₮22,994</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">납부 총액</span>
+            <span class="calc-val total">₮61,317</span>
+          </div>
+          <div class="calc-bar">
+            <span class="calc-bar-label">PDV·원장 자동 연동 완료</span>
+            <button class="calc-btn">납부 신청</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="section section-alt">
+  <div class="container">
+    <div class="section-label">납세 흐름</div>
+    <h2 class="section-title">5단계 자동 납세 프로세스</h2>
+    <p class="section-desc">고팡 마켓 거래가 발생하는 순간부터 국세청 납부 완료까지, AI가 자동으로 처리합니다.</p>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-title">거래 기록 수집</div>
+        <p class="step-desc">고팡 PDV 로그 및 fs_ledger에 기록된 거래·매출·비용 데이터를 실시간 집계</p>
+        <div class="step-arrow">›</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-title">AI 세목 분류</div>
+        <p class="step-desc">DeepSeek AI가 거래 항목을 세법 기준으로 분류 — 과세·비과세·감면 항목 자동 구분</p>
+        <div class="step-arrow">›</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-title">분기 세금 계산</div>
+        <p class="step-desc">소득세·부가가치세·지방세를 세율표 기준으로 자동 계산하고 납세자 확인 요청</p>
+        <div class="step-arrow">›</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <div class="step-title">국세청 신고·납부</div>
+        <p class="step-desc">납세자 동의 후 국세청 전자신고 API로 자동 제출 및 납부 처리</p>
+        <div class="step-arrow">›</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">5</div>
+        <div class="step-title">OpenHash 영구 기록</div>
+        <p class="step-desc">납세 완료 내역이 분산 원장에 위변조 불가하게 기록되어 영구 보존</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAX TYPES -->
+<section id="tax-types" class="section">
+  <div class="container">
+    <div class="section-label">세금 종류</div>
+    <h2 class="section-title">자동 계산되는 세목</h2>
+    <p class="section-desc">고팡 재무제표에서 추출한 데이터로 다음 세목을 자동 계산합니다.</p>
+    <div class="tax-grid">
+      <div class="tax-card">
+        <div class="tax-icon">💼</div>
+        <div class="tax-title">종합소득세</div>
+        <div class="tax-sub">개인 사업자 · 개인</div>
+        <p class="tax-desc">고팡 마켓 매출에서 필요경비를 공제한 순소득에 부과. 분기 예납 후 연간 확정 신고.</p>
+        <span class="tax-rate">세율 6%~45% (8단계)</span>
+      </div>
+      <div class="tax-card">
+        <div class="tax-icon">🧾</div>
+        <div class="tax-title">부가가치세</div>
+        <div class="tax-sub">과세 사업자</div>
+        <p class="tax-desc">재화·용역 공급 매출의 10%. 세금계산서 발행 의무 대상 자동 추출. 분기 신고납부.</p>
+        <span class="tax-rate">세율 10% (표준세율)</span>
+      </div>
+      <div class="tax-card">
+        <div class="tax-icon">🏢</div>
+        <div class="tax-title">법인세</div>
+        <div class="tax-sub">법인 사업자</div>
+        <p class="tax-desc">기관·법인으로 등록된 고팡 entity의 순이익에 부과. BS/PL 데이터 직접 연동.</p>
+        <span class="tax-rate">세율 9%~24% (4단계)</span>
+      </div>
+      <div class="tax-card">
+        <div class="tax-icon">🏙️</div>
+        <div class="tax-title">지방소득세</div>
+        <div class="tax-sub">제주특별자치도</div>
+        <p class="tax-desc">소득세·법인세의 10%를 제주도에 납부. 고팡 사용자 주소지 기반 자동 배분.</p>
+        <span class="tax-rate">소득세·법인세의 10%</span>
+      </div>
+      <div class="tax-card">
+        <div class="tax-icon">📊</div>
+        <div class="tax-title">GDC 거래세</div>
+        <div class="tax-sub">고팡 전용 (시범)</div>
+        <p class="tax-desc">GDC 디지털 화폐 거래에 부과되는 가상자산 양도소득세. 거래 건별 자동 원천징수.</p>
+        <span class="tax-rate">양도차익의 20%</span>
+      </div>
+      <div class="tax-card">
+        <div class="tax-icon">🌿</div>
+        <div class="tax-title">제주 환경세</div>
+        <div class="tax-sub">제주도 특별세 (시범)</div>
+        <p class="tax-desc">제주 지역 내 사업자 대상 탄소배출 연계 환경세. 업종·규모별 차등 부과.</p>
+        <span class="tax-rate">매출의 0.05%~0.2%</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BLOCKCHAIN -->
+<section id="blockchain" class="section section-alt">
+  <div class="container">
+    <div class="section-label">OpenHash Network</div>
+    <h2 class="section-title">위변조 불가 납세 기록</h2>
+    <p class="section-desc">모든 납세 계산·신고·납부 내역이 분산 원장에 트랜잭션으로 기록됩니다.</p>
+    <div class="chain-grid">
+      <div class="chain-card">
+        <div class="chain-header">TX #1 — 세금 계산</div>
+        <div class="chain-body">
+          <div class="chain-row"><span class="chain-k">납세자 ID</span><span class="chain-v">aaaa-test-…0001</span></div>
+          <div class="chain-row"><span class="chain-k">과세 기간</span><span class="chain-v">2026 Q2</span></div>
+          <div class="chain-row"><span class="chain-k">매출액</span><span class="chain-v">₮384,000</span></div>
+          <div class="chain-row"><span class="chain-k">세금 총액</span><span class="chain-v">₮61,317</span></div>
+          <div class="chain-row"><span class="chain-k">계산 해시</span><span class="chain-v hash">7f3a2c…e91d</span></div>
+        </div>
+      </div>
+      <div class="chain-card">
+        <div class="chain-header">TX #2 — 국세청 신고</div>
+        <div class="chain-body">
+          <div class="chain-row"><span class="chain-k">신고 번호</span><span class="chain-v">TAX-2026-Q2-0241</span></div>
+          <div class="chain-row"><span class="chain-k">세목</span><span class="chain-v">부가세+소득세</span></div>
+          <div class="chain-row"><span class="chain-k">신고 시각</span><span class="chain-v">2026-07-25 09:14</span></div>
+          <div class="chain-row"><span class="chain-k">신고 결과</span><span class="chain-v ok">✓ 접수 완료</span></div>
+          <div class="chain-row"><span class="chain-k">원장 해시</span><span class="chain-v hash">b4d7f1…8c20</span></div>
+        </div>
+      </div>
+      <div class="chain-card">
+        <div class="chain-header">TX #3 — 납부 완료</div>
+        <div class="chain-body">
+          <div class="chain-row"><span class="chain-k">납부 방법</span><span class="chain-v">GDC 자동이체</span></div>
+          <div class="chain-row"><span class="chain-k">납부 금액</span><span class="chain-v">₮61,317</span></div>
+          <div class="chain-row"><span class="chain-k">납부 시각</span><span class="chain-v">2026-07-25 09:16</span></div>
+          <div class="chain-row"><span class="chain-k">납부 상태</span><span class="chain-v ok">✓ 납부 완료</span></div>
+          <div class="chain-row"><span class="chain-k">블록 높이</span><span class="chain-v">#9,012,844</span></div>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:20px;font-size:13px;color:var(--sub);text-align:center">납세 기록은 OpenHash 분산 원장에 저장되어 어떤 기관도 수정·삭제할 수 없으며, 세무조사 시 원본 증빙으로 활용됩니다.</p>
+  </div>
+</section>
+
+<!-- DASHBOARD PREVIEW -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">실시간 현황</div>
+    <h2 class="section-title">제주 행정구역별 납세 현황</h2>
+    <p class="section-desc">제주시·서귀포시·읍면동 단위로 납세자 수, 세금 총액, 미납 현황을 실시간 집계합니다.</p>
+    <div class="dash-preview">
+      <div class="dash-topbar">
+        <span style="font-size:13px;font-weight:700">고팡 세무 — 관리자 대시보드</span>
+        <div class="dash-status"><div class="dash-dot"></div>시스템 정상</div>
+      </div>
+      <div class="dash-stats">
+        <div class="dash-stat"><div class="dash-stat-icon">👤</div><div class="dash-stat-val">1,284</div><div class="dash-stat-lbl">등록 납세자</div><div class="dash-stat-sub">▲ 23명 신규</div></div>
+        <div class="dash-stat"><div class="dash-stat-icon">💰</div><div class="dash-stat-val">₮28.4M</div><div class="dash-stat-lbl">2Q 세금 총액</div><div class="dash-stat-sub">납부율 89.2%</div></div>
+        <div class="dash-stat"><div class="dash-stat-icon">⚠️</div><div class="dash-stat-val">138</div><div class="dash-stat-lbl">미납 건수</div><div class="dash-stat-sub">독촉 발송 예정</div></div>
+        <div class="dash-stat"><div class="dash-stat-icon">⛓</div><div class="dash-stat-val">1,146</div><div class="dash-stat-lbl">원장 기록 건</div><div class="dash-stat-sub">블록체인 저장 완료</div></div>
+      </div>
+      <a href="dashboard.html" class="btn btn-pri" style="display:block;text-align:center;padding:12px;border-radius:4px;font-size:13px">🔐 관리자 대시보드 열기 — 데모: admin / admin</a>
+    </div>
+  </div>
+</section>
+
+<!-- ACCESS -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-label">앱 접근</div>
+    <h2 class="section-title">지금 바로 시작하세요</h2>
+    <div class="access-grid">
+      <div class="access-card">
+        <div class="access-icon">📱</div>
+        <div class="access-title">납세자 앱</div>
+        <p class="access-desc">스마트폰 최적화 · 고팡 재무제표 연동</p>
+        <ul class="access-list">
+          <li>분기별 세금 자동 계산 및 미리보기</li>
+          <li>세목별 상세 내역 (소득세·부가세·지방세)</li>
+          <li>확인 버튼 하나로 국세청 신고·납부</li>
+          <li>납세 내역 OpenHash 원장 조회</li>
+          <li>절세 항목 AI 추천</li>
+        </ul>
+        <a href="webapp.html" class="btn btn-grn btn-lg" style="text-align:center">📱 납세 앱 열기 →</a>
+        <p style="font-size:11px;color:var(--hint);text-align:center">고팡 ?session= 토큰 또는 guid로 자동 로그인</p>
+      </div>
+      <div class="access-card">
+        <div class="access-icon">🖥️</div>
+        <div class="access-title">관리자 대시보드</div>
+        <p class="access-desc">세무 담당자 전용 · 행정구역별 납세 집계</p>
+        <ul class="access-list">
+          <li>제주시·서귀포시·읍면동별 납세 현황</li>
+          <li>미납자 리스트 및 독촉 발송</li>
+          <li>세목별·기간별 통계 분석</li>
+          <li>OpenHash 납세 원장 검색</li>
+          <li>납세 신고서 자동 생성 및 다운로드</li>
+        </ul>
+        <a href="dashboard.html" class="btn btn-out btn-lg" style="text-align:center">🔐 대시보드 열기 →</a>
+        <p style="font-size:11px;color:var(--hint);text-align:center">데모 로그인: admin / admin</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">서비스 로드맵</div>
+    <h2 class="section-title">단계적 확장 계획</h2>
+    <p class="section-desc">제주도 시범 서비스를 시작으로 전국 고팡 사용자로 확산합니다.</p>
+    <div class="roadmap-grid">
+      <div class="roadmap-card">
+        <div class="roadmap-phase">Phase 1</div>
+        <div class="roadmap-title">제주 시범</div>
+        <div class="roadmap-period">2026 Q3 — 2026 Q4</div>
+        <ul class="roadmap-list">
+          <li>고팡 마켓 거래 기반 소득세·부가세 계산</li>
+          <li>제주도 행정구역별 납세 대시보드</li>
+          <li>OpenHash 납세 원장 기록</li>
+          <li>GDC 자동 납부 연동</li>
+          <li>500명 납세자 시범 운영</li>
+        </ul>
+      </div>
+      <div class="roadmap-card">
+        <div class="roadmap-phase">Phase 2</div>
+        <div class="roadmap-title">기능 고도화</div>
+        <div class="roadmap-period">2027 Q1 — 2027 Q2</div>
+        <ul class="roadmap-list">
+          <li>국세청 전자신고 API 정식 연동</li>
+          <li>세무사 없이 법인세 자동 신고</li>
+          <li>AI 절세 컨설팅 리포트</li>
+          <li>세금계산서 자동 발행</li>
+          <li>세무조사 대응 자료 자동 생성</li>
+        </ul>
+      </div>
+      <div class="roadmap-card">
+        <div class="roadmap-phase">Phase 3</div>
+        <div class="roadmap-title">전국 확산</div>
+        <div class="roadmap-period">2027 Q3 이후</div>
+        <ul class="roadmap-list">
+          <li>전국 고팡 사용자 납세 자동화</li>
+          <li>지자체 세수 실시간 집계 대시보드</li>
+          <li>K-Law 세금 분쟁 AI 판결 연동</li>
+          <li>글로벌 납세 (해외 사용자)</li>
+          <li>기획재정부 정책 연계</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">고팡 세무 (Tax.Gopang.net)</div>
+        <p class="footer-brand-desc">제주특별자치도 AI 납세 자동화 시범 시스템<br>고팡 재무제표 + OpenHash + K-Law 통합 플랫폼</p>
+      </div>
+      <div>
+        <div class="footer-col-title">서비스</div>
+        <ul class="footer-links">
+          <li><a href="webapp.html">납세자 앱</a></li>
+          <li><a href="dashboard.html">관리자 대시보드</a></li>
+          <li><a href="#blockchain">납세 원장 조회</a></li>
+          <li><a href="https://gopang.net">고팡 홈</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">관련 기관</div>
+        <ul class="footer-links">
+          <li><a href="#">제주특별자치도</a></li>
+          <li><a href="#">국세청</a></li>
+          <li><a href="#">제주지방국세청</a></li>
+          <li><a href="#">OpenHash Network</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">법적 안내</div>
+        <ul class="footer-links">
+          <li><a href="#">이용 약관</a></li>
+          <li><a href="#">개인정보 처리방침</a></li>
+          <li><a href="#">납세 면책 조항</a></li>
+          <li><a href="#">K-Law 연동</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 고팡 세무 — AI City Inc. / 제주특별자치도. All rights reserved.</span>
+      <span>운영: 제주세무지원센터 | 기술: OpenHash + DeepSeek AI</span>
+    </div>
+  </div>
+</footer>
+
+<!-- FLOATING -->
+<a href="webapp.html" class="float-btn" title="납세 앱 열기">
+  <div class="float-btn-circle"><span class="float-btn-icon">💰</span></div>
+  <div class="float-btn-label">납세 앱</div>
+</a>
+
+<script>
+function toggleMenu(){
+  const m=document.getElementById('mobileMenu');
+  const b=document.getElementById('hamburger');
+  m.classList.toggle('open');
+  const s=b.querySelectorAll('span');
+  if(m.classList.contains('open')){
+    s[0].style.transform='translateY(7px) rotate(45deg)';
+    s[1].style.opacity='0';
+    s[2].style.transform='translateY(-7px) rotate(-45deg)';
+  }else{s[0].style.transform='';s[1].style.opacity='1';s[2].style.transform='';}
+}
+function closeMenu(){
+  document.getElementById('mobileMenu').classList.remove('open');
+  const s=document.getElementById('hamburger').querySelectorAll('span');
+  s[0].style.transform='';s[1].style.opacity='1';s[2].style.transform='';
+}
+</script>
+</body>
+</html>
