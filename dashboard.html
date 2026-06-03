@@ -567,13 +567,13 @@ async function sendDashPDV(ipv6, user, reportOverride = null) {
       type: 'event',
       who: {
         ipv6:       ipv6,
-        role:       'admin',
+        role:       'user',           // Worker는 'user'만 허용 ('admin' 미지원)
         level:      user?.level || 'L0',
         recipients: ['gopang-pdv'],
       },
       when:  { period_start: now, period_end: now },
-      where: { svc_url: 'https://tax.gopang.net/dashboard.html' },
-      what:  { summary: 'K-Tax 관리자 대시보드 접속 — 납세 현황 조회' },
+      where: { svc_url: 'https://tax.gopang.net/webapp.html' }, // registry 등록 URL과 일치
+      what:  { summary: 'K-Tax 대시보드 접속 — 납세 현황 조회 (관리자)' },
       how:   { method: '고팡 SSO 자동 인증 (경로: ' + (user?.via || 'session') + ')' },
       why:   { goal: '납세 현황 모니터링 및 관리' },
     };
@@ -583,6 +583,14 @@ async function sendDashPDV(ipv6, user, reportOverride = null) {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ report }),
     });
+
+    // 에러 응답 디버그 로깅
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn('[TAX-DASH PDV] HTTP', res.status, errText);
+      return;
+    }
+
     const data = await res.json();
     console.log('[TAX-DASH PDV]', data.pdv_entry, data.message);
     return data.pdv_entry;
