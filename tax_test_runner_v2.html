@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>고팡 세무 — 연간 납세 시뮬레이션</title>
+<style>
+body { font-family: sans-serif; background: #111; color: #ccc; padding: 20px; margin: 0; }
+h2 { color: #fff; margin-bottom: 4px; font-size: 18px; }
+.desc { font-size: 12px; color: #888; margin-bottom: 14px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+button {
+  padding: 9px 18px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; border-radius: 4px; color: #fff;
+}
+.btn-red   { background: #ef4444; }
+.btn-green { background: #22c55e; }
+.btn-blue  { background: #3b82f6; }
+.btn-gray  { background: #6b7280; }
+#log {
+  background: #1e1e1e; color: #d4d4d4; padding: 20px;
+  height: 580px; overflow: auto; font-size: 12px;
+  font-family: 'Consolas','Menlo',monospace; line-height: 1.6;
+  border-radius: 4px;
+}
+.ok   { color: #4ade80; }
+.err  { color: #f87171; }
+.head { color: #60a5fa; font-weight: bold; }
+.sub  { color: #a78bfa; }
+.tax  { color: #fbbf24; }
+.link { color: #34d399; }
+</style>
+</head>
+<body>
+<h2>고팡 세무 — 연간 납세 시뮬레이션 v2</h2>
+<div class="desc">
+  사용자 A (Test_A · 농부) ↔ B (Test_B · 디자이너) · 2026년 4분기 거래 + 연간 납세
+</div>
+<div class="btn-row">
+  <button class="btn-red"   onclick="runCleanup()">1. Cleanup</button>
+  <button class="btn-green" onclick="runFullYear()">2. Run Full-Year Simulation</button>
+  <button class="btn-blue"  onclick="runCheck()">3. Check &amp; Verify</button>
+  <button class="btn-gray"  onclick="document.getElementById('log').textContent=''">Clear</button>
+</div>
+<pre id="log"></pre>
+
+<script>
+/* ════════════════════════════════════════════════════
+   설정
+   ════════════════════════════════════════════════════ */
+var proto = 'https';
+var host  = 'ebbecjfrwaswbdybbgiu.supabase.co';
+var S  = proto + '://' + host;
+var K  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViYmVjamZyd2Fzd2JkeWJiZ2l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjE5ODQsImV4cCI6MjA5NTEzNzk4NH0.H2ahQKtWdSke04Pdi3hDY86pdTx7UUKPUpQMlS_zciA';
+var H  = { 'apikey': K, 'Authorization': 'Bearer ' + K, 'Content-Type': 'application/json' };
+var Hd = { 'apikey': K, 'Authorization': 'Bearer ' + K };
+
+// ── 사용자 (옵션 1: Test_A / Test_B) ─────────────────
+var GA = 'aaaaaaaa-test-4000-a000-000000000001'; // Test_A (농부·농산물)
+var GB = 'bbbbbbbb-test-4000-b000-000000000002'; // Test_B (디자이너·서비스)
+var GDC_FEE = 0.0020; // 고팡 플랫폼 수수료 0.20%
+
+/* ════════════════════════════════════════════════════
+   세율표 (한국 세법 잠정 적용)
+   ════════════════════════════════════════════════════
+   부가가치세   : 매출액 × 10%  (연 2회 신고: 1월·7월)
+   종합소득세   : 순소득 누진세율 6단계 (1,200만 이하 6% ~ 1억 초과 35%)
+   지방소득세   : 소득세 × 10%
+   법인세       : 해당 없음 (개인사업자 테스트)
+   ════════════════════════════════════════════════════ */
+var TAX = {
+  VAT_RATE: 0.10,   // 부가세
+  LOCAL_RATE: 0.10, // 지방소득세 = 소득세 × 10%
+};
+
+// 종합소득세 누진세율 (과세표준 구간, 단위: ₮ GDC)
+var IT_BRACKETS = [
+  { limit: 1200000,  rate: 0.06,  ded: 0        },
+  { limit: 4600000,  rate: 0.15,  ded: 108000   },
+  { limit: 8800000,  rate: 0.24,  ded: 522000   },
+  { limit: 15000000, rate: 0.35,  ded: 1490000  },
+  { limit: 30000000, rate: 0.38,  ded: 1940000  },
+  { limit: Infinity, rate: 0.40,  ded: 2540000  },
+];
+
+function calcIT(income) {
+  if (income <= 0) return 0;
+  for (var i = 0; i < IT_BRACKETS.length; i++) {
+    if (income <= IT_BRACKETS[i].limit) {
+      return Math.round(income * IT_BRACKETS[i].rate - IT_BRACKETS[i].ded);
+    }
+  }
+  return Math.round(income * 0.40 - 2540000);
+}
+
+// 분기/반기별 세금 계산
+function calcTaxQuarter(revenue, opex) {
+  var income  = Math.max(0, revenue - opex);
+  var vat     = Math.round(revenue * TAX.VAT_RATE);
+  var it      = Math.max(0, calcIT(income));
+  var local   = Math.round(it * TAX.LOCAL_RATE);
+  var total   = vat + it + local;
+  return { income: income, vat: vat, it: it, local: local, total: total };
+}
+
+// 연간 세금 (반기 부가세 × 2, 연간 소득세 1회)
+function calcTaxAnnual(annualRev, annualOpex) {
+  var income  = Math.max(0, annualRev - annualOpex);
+  var vat     = Math.round(annualRev * TAX.VAT_RATE);   // 연간 부가세
+  var it      = Math.max(0, calcIT(income));             // 연간 소득세
+  var local   = Math.round(it * TAX.LOCAL_RATE);
+  var total   = vat + it + local;
+  return { income: income, vat: vat, it: it, local: local, total: total };
+}
+
+/* ════════════════════════════════════════════════════
+   로그 유틸
+   ════════════════════════════════════════════════════ */
+var _el = null;
+function log(msg, cls) {
+  if (!_el) _el = document.getElementById('log');
+  var line = cls ? '<span class="' + cls + '">' + msg + '</span>\n' : msg + '\n';
+  _el.innerHTML += line;
+  _el.scrollTop = _el.scrollHeight;
+}
+function fmt(n) { return (+(n||0)).toLocaleString('ko-KR', {maximumFractionDigits:0}); }
+function fmtT(n) { return '₮' + fmt(n); }
+
+/* ════════════════════════════════════════════════════
+   Supabase 헬퍼
+   ════════════════════════════════════════════════════ */
+async function getExtra(g) {
+  var r = await fetch(S+'/rest/v1/user_profiles?guid=eq.'+g+'&select=extra&limit=1', {headers:Hd});
+  var rows = await r.json();
+  return (rows[0] && rows[0].extra) || {};
+}
+async function patchExtra(g, extra) {
+  return await fetch(S+'/rest/v1/user_profiles?guid=eq.'+g, {
+    method:'PATCH', headers:Object.assign({},Hd,{'Content-Type':'application/json'}),
+    body: JSON.stringify({extra:extra})
+  });
+}
+async function addItem(owner, name, cat, price, qty, unit, delivery) {
+  var r = await fetch(S+'/rest/v1/inventory', {
+    method:'POST', headers:Object.assign({},H,{'Prefer':'return=representation'}),
+    body: JSON.stringify({owner_guid:owner, name:name, category:cat,
+      unit_price:price, quantity:qty, unit:unit, delivery:delivery, is_public:true})
+  });
+  var d = await r.json();
+  return Array.isArray(d) ? d[0] : d;
+}
+async function trade(buyer, seller, item, qty, memo) {
+  var total = qty * item.unit_price;
+  var fee   = Math.round(total * GDC_FEE * 10000) / 10000;
+  var net   = total - fee;
+  var tx    = crypto.randomUUID();
+  var now   = new Date().toISOString();
+
+  await fetch(S+'/rest/v1/inventory?id=eq.'+item.id,
+    {method:'PATCH', headers:H, body:JSON.stringify({quantity: item.quantity - qty})});
+
+  var r2 = await fetch(S+'/rest/v1/pdv_log', {
+    method:'POST', headers:Object.assign({},H,{'Prefer':'return=representation'}),
+    body: JSON.stringify({user_guid:buyer, service_id:'gopang-market', record_type:'purchase',
+      summary:item.name+' x'+qty+' buy', what:item.name, how:item.delivery||'direct',
+      why:memo||'buy', category:'market',
+      extra:{tx_id:tx, item_id:item.id, qty:qty, unit_price:item.unit_price,
+             total:total, seller_guid:seller, currency:'GDC'}})
+  });
+  var pd = await r2.json();
+  var pid = (Array.isArray(pd)?pd[0]:pd)?.id || null;
+
+  await fetch(S+'/rest/v1/pdv_log', {
+    method:'POST', headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+    body: JSON.stringify({user_guid:seller, service_id:'gopang-market', record_type:'sale',
+      summary:item.name+' x'+qty+' sell', what:item.name, how:item.delivery||'direct',
+      why:'sale', category:'market',
+      extra:{tx_id:tx, item_id:item.id, qty:qty, unit_price:item.unit_price,
+             total:total, fee:fee, seller_net:net, buyer_guid:buyer, currency:'GDC'}})
+  });
+  await fetch(S+'/rest/v1/fs_ledger', {
+    method:'POST', headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+    body: JSON.stringify({tx_id:tx, guid:buyer, counterpart:seller, direction:'debit',
+      amount:total, item_name:item.name, item_id:item.id, quantity:qty,
+      pdv_log_id:pid, fs_account:'cash', memo:item.name+' buy', tx_at:now})
+  });
+  await fetch(S+'/rest/v1/fs_ledger', {
+    method:'POST', headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+    body: JSON.stringify({tx_id:tx, guid:seller, counterpart:buyer, direction:'credit',
+      amount:net, item_name:item.name, item_id:item.id, quantity:qty,
+      pdv_log_id:null, fs_account:'revenue', memo:item.name+' sell', tx_at:now})
+  });
+  await fetch(S+'/rest/v1/fs_ledger', {
+    method:'POST', headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+    body: JSON.stringify({tx_id:tx, guid:seller, counterpart:'gopang-platform',
+      direction:'debit', amount:fee, item_name:'GDC fee', item_id:null, quantity:1,
+      pdv_log_id:null, fs_account:'platform_fee',
+      memo:'fee tx:'+tx.slice(0,8), tx_at:now})
+  });
+  await updateFS(buyer,  {'bs-cash': -total});
+  await updateFS(seller, {'bs-cash': net, 'pl-revenue': total, 'pl-opex': fee});
+  return {tx:tx, total:total, fee:fee, net:net};
+}
+
+async function updateFS(g, d) {
+  var ex = await getExtra(g);
+  ex.fs = ex.fs||{}; ex.fs.bs = ex.fs.bs||{}; ex.fs.pl = ex.fs.pl||{};
+  Object.keys(d).forEach(function(k) {
+    var sc = k.indexOf('bs-')===0 ? 'bs' : 'pl';
+    ex.fs[sc][k] = String(Math.max(0, (parseFloat(ex.fs[sc][k]||'0')||0) + d[k]));
+  });
+  await patchExtra(g, ex);
+}
+
+// 납세 기록: extra.fs.tax[quarter] + fs_ledger + pdv_log
+async function recordTax(g, quarter, tax, revenue, opex) {
+  if (tax.total <= 0) {
+    log('  [TAX] '+quarter+' 납부액 없음 — 건너뜀', 'sub'); return null;
+  }
+  var txId = crypto.randomUUID();
+  var now  = new Date().toISOString();
+  var who  = g===GA ? 'A' : 'B';
+
+  // fs_ledger — 납세자 차변
+  await fetch(S+'/rest/v1/fs_ledger', {
+    method:'POST', headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+    body: JSON.stringify({tx_id:txId, guid:g, counterpart:'jeju-tax-authority',
+      direction:'debit', amount:tax.total,
+      item_name:quarter+' 세금 납부', item_id:null, quantity:1,
+      pdv_log_id:null, fs_account:'tax_payment',
+      memo:'VAT:'+tax.vat+' IT:'+tax.it+' Local:'+tax.local,
+      tx_at:now})
+  });
+  // fs_ledger — 국세청 대변
+  await fetch(S+'/rest/v1/fs_ledger', {
+    method:'POST', headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+    body: JSON.stringify({tx_id:txId, guid:'jeju-tax-authority', counterpart:g,
+      direction:'credit', amount:tax.total,
+      item_name:quarter+' 세수', item_id:null, quantity:1,
+      pdv_log_id:null, fs_account:'tax_revenue',
+      memo:'제주지방국세청 세수 tx:'+txId.slice(0,8), tx_at:now})
+  });
+  // PDV 납세 기록
+  await fetch(S+'/rest/v1/pdv_log', {
+    method:'POST', headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+    body: JSON.stringify({user_guid:g, service_id:'gopang-tax', record_type:'tax',
+      summary:quarter+' 납세 완료 '+fmtT(tax.total),
+      what:'부가세+소득세+지방세', how:'GDC auto-transfer',
+      why:'연간 납세', category:'tax',
+      extra:{tx_id:txId, quarter:quarter, revenue:revenue, opex:opex,
+             income:tax.income, vat:tax.vat, income_tax:tax.it,
+             local_tax:tax.local, total:tax.total, currency:'GDC',
+             authority:'제주지방국세청'}})
+  });
+  // extra.fs.tax[quarter] 저장
+  var ex = await getExtra(g);
+  ex.fs = ex.fs||{};
+  ex.fs.tax = ex.fs.tax||{};
+  ex.fs.tax[quarter] = {
+    revenue:revenue, opex:opex, income:tax.income,
+    vat:tax.vat, income_tax:tax.it, local_tax:tax.local, total:tax.total,
+    status:'paid', paid_at:now, tx_id:txId, authority:'제주지방국세청'
+  };
+  // 현금 차감
+  ex.fs.bs = ex.fs.bs||{};
+  ex.fs.bs['bs-cash'] = String(Math.max(0,
+    (parseFloat(ex.fs.bs['bs-cash']||'0')||0) - tax.total));
+  var rt = await patchExtra(g, ex);
+  log('  [TAX-'+who+'] '+quarter+' '+fmtT(tax.total)+
+      ' (VAT:'+fmtT(tax.vat)+' IT:'+fmtT(tax.it)+' Local:'+fmtT(tax.local)+
+      ') saved => '+rt.status, 'tax');
+  return txId;
+}
+
+/* ════════════════════════════════════════════════════
+   1. CLEANUP
+   ════════════════════════════════════════════════════ */
+async function runCleanup() {
+  log('=== CLEANUP START ===', 'head');
+  var fsReset = {
+    bs: {'bs-cash':'5000000','bs-ar':'0','bs-inventory':'1000000',
+         'bs-ppe':'0','bs-ap':'0','bs-debt':'0','bs-equity':'6000000'},
+    pl: {'pl-revenue':'0','pl-cogs':'0','pl-opex':'0','pl-other':'0'},
+    cf: {'cf-op':'0','cf-inv':'0','cf-fin':'0'},
+    tax: {}
+  };
+  var steps = [
+    ['fs_ledger','guid=eq.'+GA], ['fs_ledger','guid=eq.'+GB],
+    ['fs_ledger','counterpart=eq.jeju-tax-authority'],
+    ['pdv_log','user_guid=eq.'+GA], ['pdv_log','user_guid=eq.'+GB],
+    ['inventory','owner_guid=eq.'+GA], ['inventory','owner_guid=eq.'+GB],
+  ];
+  for (var i=0; i<steps.length; i++) {
+    var r = await fetch(S+'/rest/v1/'+steps[i][0]+'?'+steps[i][1],
+      {method:'DELETE', headers:Hd});
+    log('DEL ['+steps[i][0]+'] '+steps[i][1]+' => '+r.status,
+      r.status===204||r.status===200 ? 'ok' : 'err');
+  }
+  for (var gi=0; gi<[GA,GB].length; gi++) {
+    var g  = [GA,GB][gi];
+    var ex = await getExtra(g);
+    ex.fs  = JSON.parse(JSON.stringify(fsReset));
+    var ru = await patchExtra(g, ex);
+    log('RESET FS ['+(gi===0?'A':'B')+'] cash=₮5,000,000 tax={} => '+ru.status,
+      ru.status===200||ru.status===204 ? 'ok' : 'err');
+  }
+  log('=== CLEANUP DONE ===\n', 'head');
+}
+
+/* ════════════════════════════════════════════════════
+   2. FULL-YEAR SIMULATION
+   연간 4분기 거래 + 반기 부가세 2회 + 연간 종합소득세 1회
+   ════════════════════════════════════════════════════ */
+async function runFullYear() {
+  log('=== 2026 FULL-YEAR SIMULATION START ===', 'head');
+  log('납세자 A: '+GA.slice(0,20)+'… (농부·농산물)', 'sub');
+  log('납세자 B: '+GB.slice(0,20)+'… (디자이너·서비스)\n', 'sub');
+
+  /* ── 재고 등록 ── */
+  log('--- [재고 등록] ---', 'sub');
+  var iA1 = await addItem(GA,'제주 감귤 10kg',    'farm',    28000,200,'box',  'parcel');
+  var iA2 = await addItem(GA,'한라봉 5kg',         'farm',    35000,100,'box',  'parcel');
+  var iA3 = await addItem(GA,'흑돼지 500g',        'farm',    18000, 80,'pack', 'cold');
+  var iA4 = await addItem(GA,'스마트팜 컨설팅 1h', 'service', 80000, 40,'h',   'video');
+  var iB1 = await addItem(GB,'랜딩페이지 제작',    'digital',300000, 20,'proj','online');
+  var iB2 = await addItem(GB,'로고 디자인 3안',    'digital',150000, 30,'proj','file');
+  var iB3 = await addItem(GB,'영문 번역 A4',       'service', 15000,100,'page','email');
+  var iB4 = await addItem(GB,'마케팅 컨설팅 30m',  'service', 60000, 30,'h',  'video');
+  log('재고 등록 완료: A 4종 / B 4종\n', 'ok');
+
+  /* ─────────────────────────────────────────────────
+     Q1 거래 (1~3월): B→A 농산물, A→B 서비스
+     ───────────────────────────────────────────────── */
+  log('--- [Q1: 1~3월 거래] ---', 'sub');
+  await trade(GB,GA,iA1,10,'Q1 홈');    log('  B→A 감귤 10box '+fmtT(280000));
+  await trade(GB,GA,iA2, 5,'Q1 선물');  log('  B→A 한라봉 5box '+fmtT(175000));
+  await trade(GA,GB,iB1, 1,'Q1 홈피'); log('  A→B 랜딩페이지 '+fmtT(300000));
+  await trade(GA,GB,iB3,10,'Q1 번역'); log('  A→B 영문번역 10p '+fmtT(150000));
+  await trade(GB,GA,iA3, 8,'Q1 식품'); log('  B→A 흑돼지 8p '+fmtT(144000));
+  log('Q1 거래 완료\n', 'ok');
+
+  /* ─────────────────────────────────────────────────
+     Q2 거래 (4~6월)
+     ───────────────────────────────────────────────── */
+  log('--- [Q2: 4~6월 거래] ---', 'sub');
+  await trade(GB,GA,iA1,15,'Q2 납품');  log('  B→A 감귤 15box '+fmtT(420000));
+  await trade(GB,GA,iA4, 3,'Q2 컨설'); log('  B→A 스마트팜 컨설팅 3h '+fmtT(240000));
+  await trade(GA,GB,iB2, 2,'Q2 브랜'); log('  A→B 로고 2세트 '+fmtT(300000));
+  await trade(GA,GB,iB4, 4,'Q2 마케'); log('  A→B 마케팅 컨설팅 4h '+fmtT(240000));
+  await trade(GB,GA,iA2, 8,'Q2 납품'); log('  B→A 한라봉 8box '+fmtT(280000));
+  await trade(GB,GA,iA3,10,'Q2 식품'); log('  B→A 흑돼지 10p '+fmtT(180000));
+  log('Q2 거래 완료\n', 'ok');
+
+  /* ── 1기 부가세 신고 (7월 — 상반기 1~6월 매출 기준) ── */
+  log('--- [1기 부가세 신고 — 2026.07] ---', 'sub');
+  var h1A = await getExtra(GA);
+  var h1B = await getExtra(GB);
+  var rev1A  = parseFloat(h1A.fs.pl['pl-revenue']||'0');
+  var opex1A = parseFloat(h1A.fs.pl['pl-opex']   ||'0');
+  var rev1B  = parseFloat(h1B.fs.pl['pl-revenue']||'0');
+  var opex1B = parseFloat(h1B.fs.pl['pl-opex']   ||'0');
+  var vat1A = Math.round(rev1A * TAX.VAT_RATE);
+  var vat1B = Math.round(rev1B * TAX.VAT_RATE);
+  log('  A 상반기 매출='+fmtT(rev1A)+'  부가세(10%)='+fmtT(vat1A), 'tax');
+  log('  B 상반기 매출='+fmtT(rev1B)+'  부가세(10%)='+fmtT(vat1B), 'tax');
+  // 부가세만 납부 (1기 — 소득세는 연말 정산)
+  var vatOnly1A = {income:0, vat:vat1A, it:0, local:0, total:vat1A};
+  var vatOnly1B = {income:0, vat:vat1B, it:0, local:0, total:vat1B};
+  await recordTax(GA,'2026-H1-VAT', vatOnly1A, rev1A, opex1A);
+  await recordTax(GB,'2026-H1-VAT', vatOnly1B, rev1B, opex1B);
+  log('1기 부가세 납부 완료\n', 'ok');
+
+  /* ─────────────────────────────────────────────────
+     Q3 거래 (7~9월)
+     ───────────────────────────────────────────────── */
+  log('--- [Q3: 7~9월 거래] ---', 'sub');
+  await trade(GB,GA,iA1,20,'Q3 납품');  log('  B→A 감귤 20box '+fmtT(560000));
+  await trade(GB,GA,iA4, 5,'Q3 컨설'); log('  B→A 스마트팜 컨설팅 5h '+fmtT(400000));
+  await trade(GA,GB,iB1, 1,'Q3 홈피'); log('  A→B 랜딩페이지 '+fmtT(300000));
+  await trade(GA,GB,iB3,20,'Q3 번역'); log('  A→B 영문번역 20p '+fmtT(300000));
+  await trade(GB,GA,iA2,10,'Q3 납품'); log('  B→A 한라봉 10box '+fmtT(350000));
+  log('Q3 거래 완료\n', 'ok');
+
+  /* ─────────────────────────────────────────────────
+     Q4 거래 (10~12월)
+     ───────────────────────────────────────────────── */
+  log('--- [Q4: 10~12월 거래] ---', 'sub');
+  await trade(GB,GA,iA1,15,'Q4 납품');  log('  B→A 감귤 15box '+fmtT(420000));
+  await trade(GB,GA,iA3,15,'Q4 식품'); log('  B→A 흑돼지 15p '+fmtT(270000));
+  await trade(GA,GB,iB2, 3,'Q4 브랜'); log('  A→B 로고 3세트 '+fmtT(450000));
+  await trade(GA,GB,iB4, 6,'Q4 마케'); log('  A→B 마케팅 컨설팅 6h '+fmtT(360000));
+  await trade(GB,GA,iA4, 4,'Q4 컨설'); log('  B→A 스마트팜 컨설팅 4h '+fmtT(320000));
+  log('Q4 거래 완료\n', 'ok');
+
+  /* ── 연간 재무 집계 ── */
+  log('--- [연간 재무 집계] ---', 'sub');
+  var finalA = await getExtra(GA);
+  var finalB = await getExtra(GB);
+  var annRevA  = parseFloat(finalA.fs.pl['pl-revenue']||'0');
+  var annOpA   = parseFloat(finalA.fs.pl['pl-opex']   ||'0');
+  var annCashA = parseFloat(finalA.fs.bs['bs-cash']   ||'0');
+  var annRevB  = parseFloat(finalB.fs.pl['pl-revenue']||'0');
+  var annOpB   = parseFloat(finalB.fs.pl['pl-opex']   ||'0');
+  var annCashB = parseFloat(finalB.fs.bs['bs-cash']   ||'0');
+  log('  A 연간매출='+fmtT(annRevA)+'  판관비='+fmtT(annOpA)+'  현금='+fmtT(annCashA));
+  log('  B 연간매출='+fmtT(annRevB)+'  판관비='+fmtT(annOpB)+'  현금='+fmtT(annCashB));
+
+  /* ── 2기 부가세 신고 (다음해 1월 — 하반기 7~12월) ── */
+  log('\n--- [2기 부가세 신고 — 2027.01 (하반기)] ---', 'sub');
+  // 하반기 매출 = 연간 - 상반기
+  var rev2A  = annRevA  - rev1A;
+  var rev2B  = annRevB  - rev1B;
+  var vat2A  = Math.round(rev2A * TAX.VAT_RATE);
+  var vat2B  = Math.round(rev2B * TAX.VAT_RATE);
+  log('  A 하반기 매출='+fmtT(rev2A)+'  부가세='+fmtT(vat2A), 'tax');
+  log('  B 하반기 매출='+fmtT(rev2B)+'  부가세='+fmtT(vat2B), 'tax');
+  var vatOnly2A = {income:0, vat:vat2A, it:0, local:0, total:vat2A};
+  var vatOnly2B = {income:0, vat:vat2B, it:0, local:0, total:vat2B};
+  await recordTax(GA,'2026-H2-VAT', vatOnly2A, rev2A, annOpA/2);
+  await recordTax(GB,'2026-H2-VAT', vatOnly2B, rev2B, annOpB/2);
+
+  /* ── 연간 종합소득세 신고 (5월 — 전년도 소득) ── */
+  log('\n--- [연간 종합소득세 신고 — 2027.05] ---', 'sub');
+  var itTaxA = calcTaxAnnual(annRevA, annOpA);
+  var itTaxB = calcTaxAnnual(annRevB, annOpB);
+  // 이미 납부한 부가세는 소득세 계산과 별개 (부가세는 비용 아님)
+  var itOnlyA = {income:itTaxA.income, vat:0, it:itTaxA.it, local:itTaxA.local, total:itTaxA.it+itTaxA.local};
+  var itOnlyB = {income:itTaxB.income, vat:0, it:itTaxB.it, local:itTaxB.local, total:itTaxB.it+itTaxB.local};
+  log('  A 과세표준='+fmtT(itTaxA.income)+'  소득세='+fmtT(itTaxA.it)+'  지방='+fmtT(itTaxA.local), 'tax');
+  log('  B 과세표준='+fmtT(itTaxB.income)+'  소득세='+fmtT(itTaxB.it)+'  지방='+fmtT(itTaxB.local), 'tax');
+  await recordTax(GA,'2026-IT', itOnlyA, annRevA, annOpA);
+  await recordTax(GB,'2026-IT', itOnlyB, annRevB, annOpB);
+
+  /* ── 최종 요약 ── */
+  var endA = await getExtra(GA);
+  var endB = await getExtra(GB);
+  log('\n=== SIMULATION RESULT ===', 'head');
+  log('납세자 A (Test_A)', 'sub');
+  log('  연간매출:  '+fmtT(annRevA));
+  log('  판관비:    '+fmtT(annOpA));
+  log('  순소득:    '+fmtT(Math.max(0,annRevA-annOpA)));
+  log('  1기부가세: '+fmtT(vat1A), 'tax');
+  log('  2기부가세: '+fmtT(vat2A), 'tax');
+  log('  소득세:    '+fmtT(itTaxA.it), 'tax');
+  log('  지방세:    '+fmtT(itTaxA.local), 'tax');
+  log('  납세합계:  '+fmtT(vat1A+vat2A+itTaxA.it+itTaxA.local), 'tax');
+  log('  최종현금:  '+fmtT(endA.fs.bs['bs-cash']));
+  log('납세자 B (Test_B)', 'sub');
+  log('  연간매출:  '+fmtT(annRevB));
+  log('  판관비:    '+fmtT(annOpB));
+  log('  순소득:    '+fmtT(Math.max(0,annRevB-annOpB)));
+  log('  1기부가세: '+fmtT(vat1B), 'tax');
+  log('  2기부가세: '+fmtT(vat2B), 'tax');
+  log('  소득세:    '+fmtT(itTaxB.it), 'tax');
+  log('  지방세:    '+fmtT(itTaxB.local), 'tax');
+  log('  납세합계:  '+fmtT(vat1B+vat2B+itTaxB.it+itTaxB.local), 'tax');
+  log('  최종현금:  '+fmtT(endB.fs.bs['bs-cash']));
+
+  log('\n고팡 웹앱에서 확인:', 'sub');
+  log('  A: '+proto+'://gopang.net/user_template.html?guid='+GA+'&session=test-session-token-user-a-2026', 'link');
+  log('  B: '+proto+'://gopang.net/user_template.html?guid='+GB+'&session=test-session-token-user-b-2026', 'link');
+  log('  → 재무제표 탭 > 세금 납부 내역 탭에서 분기별 기록 확인\n', 'link');
+  log('납세 앱에서 확인:', 'sub');
+  log('  A: '+proto+'://tax.gopang.net/webapp.html?guid='+GA, 'link');
+  log('  B: '+proto+'://tax.gopang.net/webapp.html?guid='+GB, 'link');
+  log('=== SIMULATION DONE ===', 'head');
+}
+
+/* ════════════════════════════════════════════════════
+   3. CHECK & VERIFY
+   ════════════════════════════════════════════════════ */
+async function runCheck() {
+  log('=== CHECK & VERIFY ===', 'head');
+
+  for (var gi=0; gi<[GA,GB].length; gi++) {
+    var g   = [GA,GB][gi];
+    var who = gi===0 ? 'A (Test_A)' : 'B (Test_B)';
+    var ex  = await getExtra(g);
+    var bs  = ex.fs?.bs || {};
+    var pl  = ex.fs?.pl || {};
+    var tax = ex.fs?.tax || {};
+
+    log('\n['+who+']', 'sub');
+    log('  현금잔액:  '+fmtT(bs['bs-cash']));
+    log('  연간매출:  '+fmtT(pl['pl-revenue']));
+    log('  판관비:    '+fmtT(pl['pl-opex']));
+
+    var quarters = Object.keys(tax).sort();
+    if (!quarters.length) {
+      log('  납세기록:  없음', 'err');
+    } else {
+      log('  납세기록 (extra.fs.tax):', 'tax');
+      var totalPaid = 0;
+      quarters.forEach(function(q) {
+        var t = tax[q];
+        totalPaid += t.total||0;
+        log('    '+q+' | '+fmtT(t.total)+
+            ' | VAT:'+fmtT(t.vat||0)+
+            ' IT:'+fmtT(t.income_tax||0)+
+            ' Local:'+fmtT(t.local_tax||0)+
+            ' | '+t.status+
+            ' | tx:'+((t.tx_id||'').slice(0,8))+'…', 'tax');
+      });
+      log('  총납세액:  '+fmtT(totalPaid), 'tax');
+    }
+  }
+
+  // 납세 원장 — fs_account=tax_payment 기준 (guid가 UUID타입이라 jeju-tax-authority는 조회 불가)
+  log('\n--- 납세 원장 (fs_account=tax_payment) ---', 'sub');
+  var r = await fetch(
+    S+'/rest/v1/fs_ledger?fs_account=eq.tax_payment'+
+    '&guid=in.('+GA+','+GB+')'+
+    '&select=tx_id,guid,amount,memo,tx_at&order=tx_at.desc&limit=20',
+    {headers:Hd});
+  var rows = await r.json();
+  log('납세 원장 건수: '+(Array.isArray(rows)?rows.length:0)+'건',
+    Array.isArray(rows)&&rows.length>0 ? 'ok' : 'err');
+  if (Array.isArray(rows)) {
+    var totalAuth = 0;
+    rows.forEach(function(x) {
+      totalAuth += x.amount||0;
+      var who = x.guid===GA ? 'A' : 'B';
+      log('  ['+who+'] TX:'+x.tx_id.slice(0,8)+'…  '+fmtT(x.amount)+'  '+(x.memo||''), 'tax');
+    });
+    log('  국세청 수납 합계: '+fmtT(totalAuth), 'tax');
+  }
+
+  // PDV 납세 기록 확인
+  log('\n--- PDV 납세 기록 (service_id=gopang-tax) ---', 'sub');
+  var r2 = await fetch(
+    S+'/rest/v1/pdv_log?service_id=eq.gopang-tax'+
+    '&user_guid=in.('+GA+','+GB+')'+
+    '&select=user_guid,summary&order=id.desc&limit=10',
+    {headers:Hd});
+  var pdvRows = await r2.json();
+  log('납세 PDV 건수: '+(Array.isArray(pdvRows)?pdvRows.length:0)+'건',
+    Array.isArray(pdvRows)&&pdvRows.length>0 ? 'ok' : 'err');
+  if (Array.isArray(pdvRows)) {
+    pdvRows.forEach(function(x) {
+      var who = x.user_guid===GA ? 'A' : 'B';
+      log('  ['+who+'] '+x.summary, 'tax');
+    });
+  }
+
+  log('\n--- 웹앱 확인 링크 ---', 'sub');
+  log('고팡 A: '+proto+'://gopang.net/user_template.html?guid='+GA+'&session=test-session-token-user-a-2026', 'link');
+  log('고팡 B: '+proto+'://gopang.net/user_template.html?guid='+GB+'&session=test-session-token-user-b-2026', 'link');
+  log('납세앱 A: '+proto+'://tax.gopang.net/webapp.html?guid='+GA, 'link');
+  log('납세앱 B: '+proto+'://tax.gopang.net/webapp.html?guid='+GB, 'link');
+  log('\n=== CHECK DONE ===', 'head');
+}
+</script>
+</body>
+</html>
