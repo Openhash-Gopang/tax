@@ -164,37 +164,37 @@ input,select{font-family:var(--font)}
   </a>
   <nav class="sb-nav">
     <div class="sb-section">납세 현황</div>
-    <a class="sb-item active" href="dashboard.html">
+    <a class="sb-item active" id="nav-dashboard" href="#" onclick="switchView('dashboard');return false;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       <span class="sb-label">종합 대시보드</span>
     </a>
-    <a class="sb-item" href="#">
+    <a class="sb-item" id="nav-taxpayers" href="#" onclick="switchView('taxpayers');return false;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       <span class="sb-label">납세자 목록</span><span class="sb-badge" id="sb-cnt">—</span>
     </a>
-    <a class="sb-item" href="#">
+    <a class="sb-item" id="nav-district" href="#" onclick="switchView('district');return false;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
       <span class="sb-label">읍면동별 현황</span>
     </a>
-    <a class="sb-item" href="#">
+    <a class="sb-item" id="nav-unpaid" href="#" onclick="switchView('unpaid');return false;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span class="sb-label">미납 관리</span>
     </a>
     <div class="sb-section">세목 분석</div>
-    <a class="sb-item" href="#">
+    <a class="sb-item" id="nav-taxtype" href="#" onclick="switchView('taxtype');return false;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       <span class="sb-label">세목별 통계</span>
     </a>
-    <a class="sb-item" href="#">
+    <a class="sb-item" id="nav-revenue" href="#" onclick="switchView('revenue');return false;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       <span class="sb-label">세수 집계</span>
     </a>
-    <a class="sb-item" href="#">
+    <a class="sb-item" id="nav-reports" href="#" onclick="switchView('reports');return false;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       <span class="sb-label">납세 신고서</span>
     </a>
     <div class="sb-section">원장</div>
-    <a class="sb-item" href="#">
+    <a class="sb-item" id="nav-ledger" href="#" onclick="switchView('ledger');return false;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       <span class="sb-label">OpenHash 원장</span>
     </a>
@@ -274,8 +274,11 @@ input,select{font-family:var(--font)}
     </div>
   </div>
 
-  <!-- Table -->
-  <div class="tbl-outer">
+  <!-- ── 뷰 컨테이너 (switchView로 교체) ── -->
+  <div class="tbl-outer" id="view-container">
+
+    <!-- VIEW: dashboard / taxpayers (기본 테이블) -->
+    <div id="view-table" style="display:contents">
     <table class="tbl" id="main-tbl">
       <thead>
         <tr>
@@ -296,7 +299,74 @@ input,select{font-family:var(--font)}
         <tr><td colspan="11" style="text-align:center;padding:48px;color:var(--txt3)">데이터 로딩 중…</td></tr>
       </tbody>
     </table>
-  </div>
+    </div><!-- /view-table -->
+
+    <!-- VIEW: district (읍면동별 현황) -->
+    <div id="view-district" style="display:none;padding:20px;overflow-y:auto;height:100%">
+      <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:16px">읍면동별 납세 현황</div>
+      <div id="district-content"></div>
+    </div>
+
+    <!-- VIEW: unpaid (미납 관리) -->
+    <div id="view-unpaid" style="display:none;overflow-y:auto;height:100%">
+      <table class="tbl" id="unpaid-tbl">
+        <thead><tr>
+          <th><div class="th-inner"><span class="col-name">납세자 ID</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">이름</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">행정구역</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">세금 합계 (₮)</span><span class="col-type">numeric</span></div></th>
+          <th><div class="th-inner"><span class="col-name">현금 잔액 (₮)</span><span class="col-type">numeric</span></div></th>
+          <th><div class="th-inner"><span class="col-name">부족액 (₮)</span><span class="col-type">numeric</span></div></th>
+          <th><div class="th-inner"><span class="col-name">상태</span><span class="col-type">text</span></div></th>
+        </tr></thead>
+        <tbody id="unpaid-tbody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--txt3)">데이터 없음</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- VIEW: taxtype (세목별 통계) -->
+    <div id="view-taxtype" style="display:none;padding:20px;overflow-y:auto;height:100%">
+      <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:16px">세목별 통계</div>
+      <div id="taxtype-content"></div>
+    </div>
+
+    <!-- VIEW: revenue (세수 집계) -->
+    <div id="view-revenue" style="display:none;padding:20px;overflow-y:auto;height:100%">
+      <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:16px">세수 집계</div>
+      <div id="revenue-content"></div>
+    </div>
+
+    <!-- VIEW: reports (납세 신고서 — PDV 로그) -->
+    <div id="view-reports" style="display:none;overflow-y:auto;height:100%">
+      <table class="tbl" id="reports-tbl">
+        <thead><tr>
+          <th><div class="th-inner"><span class="col-name">PDV ID</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">GUID</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">서비스</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">유형</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">요약</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">기록 일시</span><span class="col-type">timestamptz</span></div></th>
+        </tr></thead>
+        <tbody id="reports-tbody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--txt3)">로딩 중…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- VIEW: ledger (OpenHash 원장) -->
+    <div id="view-ledger" style="display:none;overflow-y:auto;height:100%">
+      <table class="tbl" id="ledger-tbl">
+        <thead><tr>
+          <th><div class="th-inner"><span class="col-name">TX ID</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">GUID</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">방향</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">금액 (₮)</span><span class="col-type">numeric</span></div></th>
+          <th><div class="th-inner"><span class="col-name">항목명</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">계정과목</span><span class="col-type">text</span></div></th>
+          <th><div class="th-inner"><span class="col-name">거래 일시</span><span class="col-type">timestamptz</span></div></th>
+        </tr></thead>
+        <tbody id="ledger-tbody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--txt3)">로딩 중…</td></tr></tbody>
+      </table>
+    </div>
+
+  </div><!-- /view-container -->
 
   <!-- Footer -->
   <div class="tbl-foot">
@@ -357,6 +427,276 @@ function payStatus(cash, taxTotal) {
 }
 
 let _allRows=[];
+let _curView='dashboard';
+
+// ── 뷰 전환 ─────────────────────────────────────────────────
+function switchView(view) {
+  _curView = view;
+
+  // 모든 뷰 숨기기
+  const views = ['table','district','unpaid','taxtype','revenue','reports','ledger'];
+  views.forEach(v => {
+    const el = document.getElementById('view-' + v);
+    if (el) el.style.display = 'none';
+  });
+
+  // 사이드바 active 초기화
+  document.querySelectorAll('.sb-item[id^="nav-"]').forEach(el => el.classList.remove('active'));
+
+  // breadcrumb·footer 업데이트
+  const labels = {
+    dashboard:  '종합 대시보드',
+    taxpayers:  '납세자 목록',
+    district:   '읍면동별 현황',
+    unpaid:     '미납 관리',
+    taxtype:    '세목별 통계',
+    revenue:    '세수 집계',
+    reports:    '납세 신고서',
+    ledger:     'OpenHash 원장',
+  };
+  document.querySelector('.bc-cur').textContent = labels[view] || view;
+
+  const navId = view === 'taxpayers' ? 'nav-dashboard' : 'nav-' + view;
+  const navEl = document.getElementById(navId === 'nav-dashboard' && view === 'dashboard' ? 'nav-dashboard' : 'nav-' + view);
+  if (navEl) navEl.classList.add('active');
+  else { const d = document.getElementById('nav-dashboard'); if(d) d.classList.add('active'); }
+
+  // 해당 뷰 표시
+  if (view === 'dashboard' || view === 'taxpayers') {
+    document.getElementById('view-table').style.display = 'contents';
+    if (view === 'taxpayers') renderTable(_allRows);
+    document.getElementById('foot-count').textContent = _allRows.length + ' rows';
+  } else {
+    const el = document.getElementById('view-' + view);
+    if (el) el.style.display = 'block';
+    // 뷰별 렌더
+    if (view === 'district')  renderDistrict();
+    if (view === 'unpaid')    renderUnpaid();
+    if (view === 'taxtype')   renderTaxtype();
+    if (view === 'revenue')   renderRevenue();
+    if (view === 'reports')   loadReports();
+    if (view === 'ledger')    loadLedger();
+  }
+}
+
+// ── VIEW: 읍면동별 현황 ───────────────────────────────────────
+function renderDistrict() {
+  const grouped = {};
+  _allRows.forEach(r => {
+    const key = r.district ? DIST_LABELS[r.district] : (r.address || '미상');
+    if (!grouped[key]) grouped[key] = { cnt:0, rev:0, vat:0, it:0, tax:0, unpaid:0 };
+    const g = grouped[key];
+    g.cnt++;
+    g.rev  += r.rev;
+    g.vat  += r.vat;
+    g.it   += r.incomeTax;
+    g.tax  += r.taxTotal;
+    if (r.status === '미납') g.unpaid++;
+  });
+
+  const rows = Object.entries(grouped).sort((a,b) => b[1].tax - a[1].tax);
+  document.getElementById('district-content').innerHTML = `
+    <table class="tbl" style="width:100%">
+      <thead><tr>
+        <th><div class="th-inner"><span class="col-name">행정구역</span><span class="col-type">text</span></div></th>
+        <th><div class="th-inner"><span class="col-name">납세자 수</span><span class="col-type">numeric</span></div></th>
+        <th><div class="th-inner"><span class="col-name">총 매출 (₮)</span><span class="col-type">numeric</span></div></th>
+        <th><div class="th-inner"><span class="col-name">부가세 (₮)</span><span class="col-type">numeric</span></div></th>
+        <th><div class="th-inner"><span class="col-name">소득세 (₮)</span><span class="col-type">numeric</span></div></th>
+        <th><div class="th-inner"><span class="col-name">세금 합계 (₮)</span><span class="col-type">numeric</span></div></th>
+        <th><div class="th-inner"><span class="col-name">미납 건수</span><span class="col-type">numeric</span></div></th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(([area, g]) => `
+          <tr onclick="switchView('taxpayers');setTimeout(()=>{document.getElementById('searchInput').value='${area.slice(0,4)}';filterTable();},50)">
+            <td style="font-weight:500">${area}</td>
+            <td class="amt">${g.cnt}</td>
+            <td class="amt">₮${fmt(g.rev)}</td>
+            <td class="amt">₮${fmt(g.vat)}</td>
+            <td class="amt">₮${fmt(g.it)}</td>
+            <td class="amt" style="font-weight:600">₮${fmt(g.tax)}</td>
+            <td class="amt">${g.unpaid > 0 ? '<span class="chip chip-red">'+g.unpaid+'건</span>' : '<span class="chip chip-gray">0</span>'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('foot-count').textContent = rows.length + ' 구역';
+}
+
+// ── VIEW: 미납 관리 ──────────────────────────────────────────
+function renderUnpaid() {
+  const unpaid = _allRows.filter(r => r.status === '미납' || r.status === '부분납부')
+                         .sort((a,b) => b.taxTotal - a.taxTotal);
+  const tbody = document.getElementById('unpaid-tbody');
+  if (!unpaid.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--txt3)">미납 납세자가 없습니다 ✅</td></tr>';
+    document.getElementById('foot-count').textContent = '0 rows';
+    return;
+  }
+  tbody.innerHTML = unpaid.map(r => {
+    const shortage = Math.max(0, r.taxTotal - r.cash);
+    return `<tr onclick="openPanel(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+      <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${r.guid.slice(0,16)}…</td>
+      <td style="font-weight:500">${r.name}</td>
+      <td style="color:var(--txt2)">${r.district ? DIST_LABELS[r.district] : r.address || '—'}</td>
+      <td class="amt" style="font-weight:600;color:var(--red)">₮${fmt(r.taxTotal)}</td>
+      <td class="amt">₮${fmt(r.cash)}</td>
+      <td class="amt" style="color:var(--red)">₮${fmt(shortage)}</td>
+      <td><span class="chip ${r.status==='미납'?'chip-red':'chip-org'}">${r.status}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('foot-count').textContent = unpaid.length + ' rows';
+}
+
+// ── VIEW: 세목별 통계 ────────────────────────────────────────
+function renderTaxtype() {
+  const total   = _allRows.length;
+  const vatSum  = _allRows.reduce((s,r) => s+r.vat, 0);
+  const itSum   = _allRows.reduce((s,r) => s+r.incomeTax, 0);
+  const taxSum  = _allRows.reduce((s,r) => s+r.taxTotal, 0);
+  const revSum  = _allRows.reduce((s,r) => s+r.rev, 0);
+  const opexSum = _allRows.reduce((s,r) => s+r.opex, 0);
+
+  const card = (title, rows) => `
+    <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;overflow:hidden;margin-bottom:16px">
+      <div style="background:var(--bg2);padding:8px 14px;font-size:11px;font-weight:600;color:var(--txt2);border-bottom:1px solid var(--bdr);text-transform:uppercase;letter-spacing:.5px">${title}</div>
+      ${rows.map(([k,v,sub]) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr);font-size:13px">
+          <div>
+            <div style="color:var(--txt2)">${k}</div>
+            ${sub ? '<div style="font-size:11px;color:var(--txt3);margin-top:2px">'+sub+'</div>' : ''}
+          </div>
+          <div style="font-family:var(--mono);font-weight:600;color:var(--txt)">${v}</div>
+        </div>`).join('')}
+    </div>`;
+
+  document.getElementById('taxtype-content').innerHTML =
+    card('매출·비용 현황', [
+      ['총 납세자 수', total.toLocaleString() + '명', null],
+      ['총 매출액', '₮' + fmt(revSum), '모든 납세자 합산'],
+      ['총 필요경비', '₮' + fmt(opexSum), '판매비와관리비'],
+      ['과세표준 합계', '₮' + fmt(Math.max(0, revSum - opexSum)), '매출 - 경비'],
+    ]) +
+    card('세목별 징수액', [
+      ['부가가치세 (VAT)', '₮' + fmt(vatSum), '매출액 × 10%'],
+      ['종합소득세', '₮' + fmt(itSum), '소득 × 6% (최저세율)'],
+      ['세금 합계', '₮' + fmt(taxSum), 'VAT + 소득세'],
+      ['납세율', revSum > 0 ? (taxSum/revSum*100).toFixed(1) + '%' : '—', '세금÷매출'],
+    ]) +
+    card('유형별 분포', [
+      ['개인', _allRows.filter(r=>r.entity_type==='person').length + '명', null],
+      ['기관', _allRows.filter(r=>r.entity_type==='org').length + '개', null],
+      ['사물 (IoT)', _allRows.filter(r=>r.entity_type==='thing').length + '개', null],
+    ]);
+  document.getElementById('foot-count').textContent = total + ' rows 기준';
+}
+
+// ── VIEW: 세수 집계 ──────────────────────────────────────────
+function renderRevenue() {
+  const paid    = _allRows.filter(r => r.status === '납부가능' || r.status === '해당없음');
+  const unpaid  = _allRows.filter(r => r.status === '미납');
+  const partial = _allRows.filter(r => r.status === '부분납부');
+  const taxSum  = _allRows.reduce((s,r) => s+r.taxTotal, 0);
+  const paidSum = paid.reduce((s,r) => s+r.taxTotal, 0);
+  const unpaidSum= unpaid.reduce((s,r) => s+r.taxTotal, 0);
+
+  const pct = n => taxSum > 0 ? (n/taxSum*100).toFixed(1) + '%' : '—';
+  const bar = (ratio, color) => `
+    <div style="height:6px;background:var(--bdr);border-radius:3px;margin-top:6px;overflow:hidden">
+      <div style="height:100%;width:${Math.min(100,ratio*100).toFixed(1)}%;background:${color};border-radius:3px"></div>
+    </div>`;
+
+  document.getElementById('revenue-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      ${[
+        ['총 세수', '₮'+fmt(taxSum), '전체 납세자 합산', 1, 'var(--txt)'],
+        ['징수 가능액', '₮'+fmt(paidSum), pct(paidSum)+' (납부가능)', paidSum/Math.max(taxSum,1), 'var(--grn)'],
+        ['미납 세수', '₮'+fmt(unpaidSum), pct(unpaidSum)+' (미납)', unpaidSum/Math.max(taxSum,1), 'var(--red)'],
+        ['납부율', pct(paidSum), paid.length+'/'+_allRows.length+' 명', paidSum/Math.max(taxSum,1), 'var(--acc)'],
+      ].map(([lbl,val,sub,ratio,color]) => `
+        <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:14px">
+          <div style="font-size:11px;color:var(--txt3);margin-bottom:6px">${lbl}</div>
+          <div style="font-size:18px;font-weight:700;color:var(--txt);font-family:var(--mono)">${val}</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:4px">${sub}</div>
+          ${bar(ratio, color)}
+        </div>`).join('')}
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;overflow:hidden">
+      <div style="background:var(--bg2);padding:8px 14px;font-size:11px;font-weight:600;color:var(--txt2);border-bottom:1px solid var(--bdr);text-transform:uppercase;letter-spacing:.5px">납부 상태별 현황</div>
+      ${[
+        ['납부 가능', paid.length, paidSum, 'chip-grn'],
+        ['부분 납부', partial.length, partial.reduce((s,r)=>s+r.taxTotal,0), 'chip-org'],
+        ['미납', unpaid.length, unpaidSum, 'chip-red'],
+        ['해당 없음', _allRows.filter(r=>r.status==='해당없음').length, 0, 'chip-gray'],
+      ].map(([lbl,cnt,sum,cls]) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr);font-size:13px">
+          <span class="chip ${cls}">${lbl}</span>
+          <span style="color:var(--txt2)">${cnt}명</span>
+          <span style="font-family:var(--mono);font-weight:600">₮${fmt(sum)}</span>
+        </div>`).join('')}
+    </div>`;
+  document.getElementById('foot-count').textContent = _allRows.length + ' rows 기준';
+}
+
+// ── VIEW: 납세 신고서 (PDV 로그) ─────────────────────────────
+async function loadReports() {
+  const tbody = document.getElementById('reports-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--txt3)">로딩 중…</td></tr>';
+  try {
+    const res  = await fetch(S+'/rest/v1/pdv_log?source=eq.tax&order=created_at.desc&limit=100&select=id,guid,source,type,summary,created_at', {headers:H});
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--txt3)">신고서 없음</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const dt = r.created_at ? new Date(r.created_at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}) : '—';
+      const typeChip = { event:'chip-blu', transaction:'chip-grn', calculation:'chip-org', report:'chip-gray' };
+      return `<tr>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${(r.id||'').slice(0,24)}…</td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${(r.guid||'').slice(0,20)}…</td>
+        <td><span class="chip chip-gray">${r.source||'—'}</span></td>
+        <td><span class="chip ${typeChip[r.type]||'chip-gray'}">${r.type||'—'}</span></td>
+        <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis">${r.summary||'—'}</td>
+        <td style="color:var(--txt2);font-size:12px;white-space:nowrap">${dt}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('foot-count').textContent = rows.length + ' rows';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--txt3)">로드 실패: ${e.message}</td></tr>`;
+  }
+}
+
+// ── VIEW: OpenHash 원장 (fs_ledger) ──────────────────────────
+async function loadLedger() {
+  const tbody = document.getElementById('ledger-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--txt3)">로딩 중…</td></tr>';
+  try {
+    const res  = await fetch(S+'/rest/v1/fs_ledger?order=tx_at.desc&limit=100&select=tx_id,guid,direction,amount,item_name,fs_account,tx_at', {headers:H});
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--txt3)">원장 데이터 없음</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const dt  = r.tx_at ? new Date(r.tx_at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}) : '—';
+      const dir = r.direction === 'credit'
+        ? '<span class="chip chip-grn">입금</span>'
+        : '<span class="chip chip-red">출금</span>';
+      return `<tr>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${(r.tx_id||'').slice(0,20)}…</td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${(r.guid||'').slice(0,16)}…</td>
+        <td>${dir}</td>
+        <td class="amt" style="font-weight:600;color:${r.direction==='credit'?'var(--grn)':'var(--red)'}">₮${fmt(r.amount)}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r.item_name||'—'}</td>
+        <td><span class="chip chip-gray" style="font-family:var(--mono);font-size:10px">${r.fs_account||'—'}</span></td>
+        <td style="color:var(--txt2);font-size:12px;white-space:nowrap">${dt}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('foot-count').textContent = rows.length + ' rows';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--txt3)">로드 실패: ${e.message}</td></tr>`;
+  }
+}
 
 async function loadData(){
   const tbody=document.getElementById('tax-tbody');
@@ -563,7 +903,7 @@ async function sendDashPDV(ipv6, user, reportOverride = null) {
   try {
     const now    = new Date().toISOString();
     const report = reportOverride || {
-      svc:  'tax',
+      svc:  'ktax',
       type: 'event',
       who: {
         ipv6:       ipv6,
