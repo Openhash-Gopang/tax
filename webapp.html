@@ -4,435 +4,582 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>고팡 세무 — 납세 앱</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ── 고팡 세무 webapp — Supabase-inspired, 단색 SVG 아이콘 ── */
 :root{
-  --pri:#0057A8;--pri-dk:#003A6E;--pri-lt:#EBF3FC;
-  --grn:#1B6B3A;--grn-lt:#E6F4EC;
-  --red:#C01C28;--red-lt:#FEE2E2;
-  --org:#C05621;--org-lt:#FEF3E2;
-  --txt:#1A202C;--sub:#4A5568;--hint:#718096;
-  --bdr:#E2E8F0;--bg:#F7F9FC;--sur:#FFFFFF;
-  --font:'Noto Sans KR',sans-serif;
-  --mono:'IBM Plex Mono',monospace;
-  --r:14px;
+  --bg:#f8f9fa;
+  --sur:#ffffff;
+  --bg2:#f1f3f5;
+  --bdr:#e4e4e7;
+  --bdr2:#d1d5db;
+  --txt:#111827;
+  --txt2:#374151;
+  --txt3:#6b7280;
+  --txt4:#9ca3af;
+  --acc:#3ecf8e;
+  --acc-d:#29a374;
+  --red:#dc2626;
+  --red-bg:#fef2f2;
+  --org:#d97706;
+  --org-bg:#fffbeb;
+  --grn:#16a34a;
+  --grn-bg:#f0fdf4;
+  --font:'Noto Sans KR',-apple-system,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --r:6px;
+  --r-lg:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;background:var(--bg);font-family:var(--font)}
-#app{max-width:430px;margin:0 auto;height:100vh;display:flex;flex-direction:column;background:var(--bg);position:relative;overflow:hidden}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:var(--font);-webkit-font-smoothing:antialiased}
+svg{display:block;flex-shrink:0}
+button{font-family:var(--font);cursor:pointer;border:none;background:none}
+input{font-family:var(--font)}
 
-/* SCREENS */
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .32s;background:var(--bg);overflow-y:auto;padding-bottom:72px}
+/* ── 앱 컨테이너 ── */
+#app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;background:var(--bg);position:relative;overflow:hidden}
+
+/* ── 화면 전환 ── */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;background:var(--bg);overflow-y:auto;padding-bottom:68px}
 .screen.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
 .screen.slide-out{transform:translateX(-100%);opacity:0;pointer-events:none}
 
-/* TOPBAR */
-.topbar{background:var(--sur);padding:14px 18px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:10;box-shadow:0 1px 6px rgba(0,0,0,.05)}
-.topbar-logo{width:32px;height:32px;background:var(--pri);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff}
-.topbar-info{flex:1}
-.topbar-title{font-size:16px;font-weight:700;color:var(--txt)}
-.topbar-sub{font-size:11px;color:var(--hint)}
-.topbar-back{width:36px;height:36px;border-radius:50%;background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--txt)}
+/* ── 탑바 ── */
+.topbar{background:var(--sur);height:48px;padding:0 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:10;flex-shrink:0}
+.topbar-brand{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.topbar-logo{width:28px;height:28px;background:var(--txt);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.topbar-title{font-size:14px;font-weight:600;color:var(--txt)}
+.topbar-sub{font-size:11px;color:var(--txt3);margin-top:1px}
+.topbar-back{width:32px;height:32px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;color:var(--txt2);transition:background .1s;flex-shrink:0}
+.topbar-back:hover{background:var(--bg2)}
+.topbar-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt3);background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:2px 8px;flex-shrink:0}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* HOME BANNER */
-.home-banner{background:linear-gradient(135deg,var(--pri-dk) 0%,var(--pri) 100%);padding:28px 20px 32px;color:#fff;position:relative;overflow:hidden}
-.home-banner::after{content:'';position:absolute;bottom:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.05)}
-.banner-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;margin-bottom:10px}
-.live-dot{width:6px;height:6px;background:#4CAF50;border-radius:50%;animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.home-banner h2{font-size:20px;font-weight:700;line-height:1.3;margin-bottom:6px}
-.home-banner p{font-size:13px;color:rgba(255,255,255,.75);line-height:1.6}
+/* ── 홈 헤더 ── */
+.home-header{background:var(--sur);border-bottom:1px solid var(--bdr);padding:20px 16px 16px}
+.home-header-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.home-header-title{font-size:18px;font-weight:700;color:var(--txt);line-height:1.3}
+.home-header-sub{font-size:12px;color:var(--txt3);margin-top:3px}
+.home-period{font-size:11px;color:var(--txt3);background:var(--bg2);border:1px solid var(--bdr);border-radius:4px;padding:3px 8px;white-space:nowrap}
 
-/* TAX SUMMARY */
-.tax-summary{display:grid;grid-template-columns:1fr 1fr;background:var(--sur);border-bottom:1px solid var(--bdr)}
-.tax-summary-item{padding:14px 16px;border-right:1px solid var(--bdr)}
-.tax-summary-item:nth-child(2){border-right:none}
-.tax-summary-item:nth-child(3){border-top:1px solid var(--bdr);border-right:1px solid var(--bdr)}
-.tax-summary-item:nth-child(4){border-top:1px solid var(--bdr);border-right:none}
-.ts-label{font-size:11px;color:var(--hint);margin-bottom:4px}
-.ts-val{font-size:18px;font-weight:700;color:var(--pri);font-family:var(--mono)}
-.ts-val.red{color:var(--red)}
-.ts-val.grn{color:var(--grn)}
+/* ── 통계 그리드 ── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;background:var(--sur);border-bottom:1px solid var(--bdr)}
+.stat-cell{padding:14px 16px;border-right:1px solid var(--bdr)}
+.stat-cell:nth-child(2){border-right:none}
+.stat-cell:nth-child(3){border-top:1px solid var(--bdr);border-right:1px solid var(--bdr)}
+.stat-cell:nth-child(4){border-top:1px solid var(--bdr);border-right:none}
+.stat-lbl{font-size:11px;color:var(--txt3);margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.stat-val{font-size:17px;font-weight:700;color:var(--txt);font-family:var(--mono);font-variant-numeric:tabular-nums}
+.stat-val.red{color:var(--red)}
 
-/* SECTION */
-.section-heading{font-size:12px;font-weight:700;color:var(--hint);letter-spacing:1.5px;text-transform:uppercase;padding:18px 20px 8px}
+/* ── 섹션 헤더 ── */
+.section-hd{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--txt3);padding:16px 16px 8px;display:flex;align-items:center;gap:6px}
 
-/* TAX BREAKDOWN CARD */
-.breakdown-card{margin:0 16px 14px;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden}
-.breakdown-header{background:var(--pri-lt);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
-.breakdown-title{font-size:13px;font-weight:700;color:var(--pri)}
-.breakdown-period{font-size:11px;color:var(--hint)}
-.breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--bdr);font-size:13px}
-.breakdown-row:last-child{border-bottom:none}
-.breakdown-key{color:var(--sub)}
-.breakdown-val{color:var(--txt);font-weight:600;font-family:var(--mono)}
-.breakdown-val.total{color:var(--pri);font-size:15px}
-.breakdown-val.red{color:var(--red)}
-.breakdown-val.grn{color:var(--grn)}
+/* ── 카드 ── */
+.card{margin:0 16px 12px;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r-lg);overflow:hidden}
+.card-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid var(--bdr);font-size:13px}
+.card-row:last-child{border-bottom:none}
+.card-key{color:var(--txt2)}
+.card-val{font-family:var(--mono);font-weight:600;color:var(--txt);font-variant-numeric:tabular-nums}
+.card-val.red{color:var(--red)}
+.card-val.grn{color:var(--grn)}
+.card-val.total{color:var(--txt);font-size:15px}
+.card-hd{background:var(--bg2);padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr)}
+.card-hd-title{font-size:12px;font-weight:600;color:var(--txt2);display:flex;align-items:center;gap:6px}
+.card-hd-sub{font-size:11px;color:var(--txt3)}
 
-/* PAY BUTTON */
-.pay-btn{width:calc(100%-32px);margin:0 16px 14px;background:var(--grn);color:#fff;border:none;border-radius:var(--r);padding:17px;font-size:16px;font-weight:700;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
-.pay-btn:active{transform:scale(.98);background:#145530}
-.pay-btn:disabled{background:#B0B0B0;cursor:not-allowed}
-.btn-out{width:calc(100%-32px);margin:0 16px 14px;border:1.5px solid var(--pri);background:none;color:var(--pri);border-radius:var(--r);padding:13px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer}
+/* ── 상태 배지 ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:500}
+.badge-grn{background:var(--grn-bg);color:var(--grn)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-org{background:var(--org-bg);color:var(--org)}
+.badge-gray{background:var(--bg2);color:var(--txt3)}
 
-/* HISTORY LIST */
-.history-list{padding:0 16px 100px}
-.history-item{background:var(--sur);border-radius:12px;border:1px solid var(--bdr);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
-.history-icon{width:44px;height:44px;border-radius:10px;background:var(--pri-lt);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px}
+/* ── 현금 바 ── */
+.cash-bar{margin:0 16px 12px;padding:10px 14px;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--txt3)}
+.cash-bar-val{font-family:var(--mono);font-weight:600;color:var(--txt);font-size:13px}
+
+/* ── 버튼 ── */
+.btn-primary{width:calc(100% - 32px);margin:0 16px 10px;background:var(--txt);color:#fff;border:none;border-radius:var(--r-lg);padding:14px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
+.btn-primary:active{opacity:.85}
+.btn-primary:disabled{background:var(--bdr2);cursor:not-allowed}
+.btn-primary.accent{background:var(--acc)}
+.btn-primary.accent:hover{background:var(--acc-d)}
+.btn-outline{width:calc(100% - 32px);margin:0 16px 10px;background:none;border:1px solid var(--bdr2);color:var(--txt2);border-radius:var(--r-lg);padding:12px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .1s}
+.btn-outline:hover{background:var(--bg2)}
+
+/* ── 내역 리스트 ── */
+.history-wrap{padding:0 16px 100px}
+.history-item{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.history-icon{width:36px;height:36px;border-radius:var(--r);background:var(--bg2);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--txt3)}
 .history-info{flex:1;min-width:0}
-.history-title{font-size:13px;font-weight:600;color:var(--txt)}
-.history-meta{font-size:11px;color:var(--hint);margin-top:2px}
-.history-amt{font-family:var(--mono);font-size:13px;font-weight:700;flex-shrink:0}
+.history-title{font-size:13px;font-weight:500;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-meta{font-size:11px;color:var(--txt3);margin-top:2px}
+.history-amt{font-family:var(--mono);font-size:13px;font-weight:600;flex-shrink:0}
 .history-amt.paid{color:var(--grn)}
 .history-amt.unpaid{color:var(--red)}
 
-/* BOTTOM NAV */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:72px;background:var(--sur);border-top:1px solid var(--bdr);display:flex;z-index:200;box-shadow:0 -4px 16px rgba(0,0,0,.07)}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;padding-bottom:8px;transition:color .15s;color:var(--hint)}
-.nav-item.active{color:var(--pri)}
-.nav-item-icon{font-size:22px;line-height:1}
-.nav-item-label{font-size:10px;font-weight:500}
+/* ── 하단 내비 ── */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:56px;background:var(--sur);border-top:1px solid var(--bdr);display:flex;z-index:200}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--txt4);transition:color .12s;border:none;background:none;padding:0}
+.nav-item.active{color:var(--txt)}
+.nav-item svg{opacity:.5}
+.nav-item.active svg{opacity:1}
+.nav-lbl{font-size:10px;font-weight:500}
 
-/* CALCULATE SCREEN */
-.calc-scroll{padding:16px 16px 100px}
-.calc-input-card{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:14px}
-.calc-card-header{background:var(--bg);padding:10px 16px;font-size:11px;font-weight:700;color:var(--hint);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--bdr)}
-.calc-input-row{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--bdr);gap:12px}
-.calc-input-row:last-child{border-bottom:none}
-.calc-label{font-size:13px;color:var(--sub);width:100px;flex-shrink:0}
-.calc-input{flex:1;border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;font-size:14px;font-family:var(--mono);color:var(--txt);outline:none;text-align:right;background:var(--bg)}
-.calc-input:focus{border-color:var(--pri);background:var(--sur)}
-.calc-unit{font-size:12px;color:var(--hint);flex-shrink:0}
+/* ── 계산기 ── */
+.calc-wrap{padding:12px 16px 100px}
+.calc-card{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px}
+.calc-card-hd{background:var(--bg2);padding:8px 14px;font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--bdr)}
+.calc-row{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr);gap:10px}
+.calc-row:last-child{border-bottom:none}
+.calc-lbl{font-size:13px;color:var(--txt2);width:90px;flex-shrink:0}
+.calc-input{flex:1;border:1px solid var(--bdr);border-radius:var(--r);padding:7px 10px;font-size:13px;font-family:var(--mono);color:var(--txt);outline:none;text-align:right;background:var(--bg);transition:border-color .15s}
+.calc-input:focus{border-color:var(--txt);background:var(--sur)}
+.calc-unit{font-size:12px;color:var(--txt3);width:16px;text-align:right;flex-shrink:0}
+.result-card{background:var(--txt);color:#fff;border-radius:var(--r-lg);padding:14px;margin-bottom:12px}
+.result-hd{font-size:10px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.result-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
+.result-row:last-child{border-bottom:none;padding-top:10px;margin-top:2px}
+.result-key{color:rgba(255,255,255,.55)}
+.result-val{font-family:var(--mono);font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+.result-val.total{color:var(--acc);font-size:15px}
 
-/* AI RESULT */
-.ai-result-box{background:var(--pri-dk);color:#fff;border-radius:var(--r);padding:16px;margin:0 16px 14px}
-.ai-result-title{font-size:11px;font-weight:700;color:#7DD3B0;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.ai-result-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
-.ai-result-row:last-child{border-bottom:none}
-.ai-result-key{color:rgba(255,255,255,.6)}
-.ai-result-val{color:#fff;font-family:var(--mono);font-weight:600}
-.ai-result-val.total{color:#4ade80;font-size:15px}
+/* ── 납부 결과 ── */
+.result-header{background:var(--txt);padding:32px 20px 24px;text-align:center;color:#fff}
+.result-icon{width:60px;height:60px;background:rgba(255,255,255,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;animation:pop .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.result-title{font-size:18px;font-weight:700;margin-bottom:4px}
+.result-sub{font-size:12px;color:rgba(255,255,255,.55)}
+.result-tx{font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.1);border-radius:4px;padding:3px 10px;margin-top:10px;display:inline-block}
 
-/* STATUS BADGE */
-.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700}
-.sb-paid{background:var(--grn-lt);color:var(--grn)}
-.sb-unpaid{background:var(--red-lt);color:var(--red)}
-.sb-partial{background:var(--org-lt);color:var(--org)}
-.sb-none{background:#f1f5f9;color:var(--hint)}
-
-/* MYPAGE */
-.mypage-header{background:linear-gradient(135deg,var(--pri-dk),var(--pri));padding:28px 20px 24px;color:#fff;text-align:center}
-.mypage-avatar{width:68px;height:68px;background:rgba(255,255,255,.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px}
-.mypage-name{font-size:18px;font-weight:700;margin-bottom:2px}
-.mypage-guid{font-size:11px;opacity:.6;font-family:var(--mono)}
-.mypage-stats{display:flex;gap:24px;justify-content:center;margin-top:16px}
-.mypage-stat-val{font-size:20px;font-weight:700;display:block;font-family:var(--mono)}
-.mypage-stat-label{font-size:10px;opacity:.7}
-.mypage-body{padding:16px 16px 100px}
-.menu-group{background:var(--sur);border-radius:var(--r);border:1px solid var(--bdr);overflow:hidden;margin-bottom:14px}
-.menu-item{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--bdr);cursor:pointer;font-size:14px;gap:12px;transition:background .1s}
+/* ── 마이페이지 ── */
+.mypage-hd{background:var(--sur);border-bottom:1px solid var(--bdr);padding:20px 16px}
+.mypage-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.mypage-avatar{width:44px;height:44px;background:var(--bg2);border:1px solid var(--bdr);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--txt3);flex-shrink:0}
+.mypage-name{font-size:15px;font-weight:600;color:var(--txt)}
+.mypage-guid{font-size:11px;color:var(--txt3);font-family:var(--mono);margin-top:2px}
+.mypage-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mypage-stat{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r-lg);padding:12px 14px}
+.mypage-stat-val{font-size:16px;font-weight:700;font-family:var(--mono);color:var(--txt);font-variant-numeric:tabular-nums}
+.mypage-stat-lbl{font-size:11px;color:var(--txt3);margin-top:2px}
+.mypage-body{padding:12px 16px 100px}
+.menu-group{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px}
+.menu-item{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--bdr);cursor:pointer;font-size:13px;gap:10px;color:var(--txt2);transition:background .1s}
 .menu-item:last-child{border-bottom:none}
-.menu-item:active{background:var(--bg)}
-.menu-icon{font-size:20px;width:28px;text-align:center}
-.menu-text{flex:1}
-.menu-arrow{color:var(--hint)}
+.menu-item:active{background:var(--bg2)}
+.menu-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);background:var(--bg2);color:var(--txt3);flex-shrink:0}
+.menu-text{flex:1;color:var(--txt)}
+.menu-arr{color:var(--txt4)}
 
-/* SPINNER */
-.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+/* ── 경고 박스 ── */
+.warn-box{margin:0 16px 12px;padding:10px 12px;background:var(--org-bg);border:1px solid #fde68a;border-radius:var(--r-lg);font-size:12px;color:#92400e;line-height:1.6;display:flex;gap:8px}
+.info-box{margin:0 16px 12px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r-lg);font-size:12px;color:var(--txt3);line-height:1.6;display:flex;gap:8px}
+
+/* ── 스피너 ── */
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- HOME SCREEN -->
-  <div class="screen" id="screen-home">
-    <div class="topbar">
-      <div class="topbar-logo">税</div>
-      <div class="topbar-info">
+<!-- ── HOME ──────────────────────────────────────────────── -->
+<div class="screen" id="screen-home">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
         <div class="topbar-title">고팡 세무</div>
-        <div class="topbar-sub">AI 납세 자동화</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--grn);font-weight:600">
-        <span class="live-dot"></span>실시간
       </div>
     </div>
+    <div class="topbar-badge"><span class="live-dot"></span>실시간</div>
+  </div>
 
-    <div class="home-banner">
-      <div class="banner-badge"><span class="live-dot"></span>2026년 2분기 세금 계산 완료</div>
-      <h2>💰 분기 세금<br>자동 계산됐습니다</h2>
-      <p>고팡 재무제표 기반 AI가 세금을 계산했습니다.<br>확인 후 납부하세요.</p>
+  <div class="home-header">
+    <div class="home-header-row">
+      <div>
+        <div class="home-header-title">2026년 2분기<br>납세 현황</div>
+        <div class="home-header-sub">재무제표 기반 AI 자동 계산</div>
+      </div>
+      <span class="home-period">2026 Q2</span>
     </div>
+    <div id="pay-status-badge"></div>
+  </div>
 
-    <!-- Tax Summary Grid -->
-    <div class="tax-summary" id="tax-summary">
-      <div class="tax-summary-item">
-        <div class="ts-label">2Q 매출</div>
-        <div class="ts-val" id="home-rev">₮0</div>
+  <div class="stat-grid">
+    <div class="stat-cell">
+      <div class="stat-lbl">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        2Q 매출
       </div>
-      <div class="tax-summary-item">
-        <div class="ts-label">부가세 (10%)</div>
-        <div class="ts-val red" id="home-vat">₮0</div>
-      </div>
-      <div class="tax-summary-item">
-        <div class="ts-label">소득세 (6%)</div>
-        <div class="ts-val red" id="home-it">₮0</div>
-      </div>
-      <div class="tax-summary-item">
-        <div class="ts-label">납부 총액</div>
-        <div class="ts-val red" id="home-total">₮0</div>
-      </div>
+      <div class="stat-val" id="home-rev">₮0</div>
     </div>
-
-    <div class="section-heading">납부 현황</div>
-
-    <!-- Breakdown Card -->
-    <div class="breakdown-card">
-      <div class="breakdown-header">
-        <span class="breakdown-title">2026년 2분기 세금 내역</span>
-        <span class="breakdown-period">2026.04.01 ~ 06.30</span>
+    <div class="stat-cell">
+      <div class="stat-lbl">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        부가세 (10%)
       </div>
-      <div class="breakdown-row">
-        <span class="breakdown-key">총 매출액</span>
-        <span class="breakdown-val" id="bd-rev">₮0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="breakdown-key">필요경비 (판관비)</span>
-        <span class="breakdown-val grn" id="bd-opex">- ₮0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="breakdown-key">과세표준 (순소득)</span>
-        <span class="breakdown-val" id="bd-income">₮0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="breakdown-key">부가가치세 (매출 × 10%)</span>
-        <span class="breakdown-val red" id="bd-vat">₮0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="breakdown-key">종합소득세 (소득 × 6%)</span>
-        <span class="breakdown-val red" id="bd-it">₮0</span>
-      </div>
-      <div class="breakdown-row" style="background:#fef9ff">
-        <span class="breakdown-key" style="font-weight:700">납부 총액</span>
-        <span class="breakdown-val total" id="bd-total">₮0</span>
-      </div>
+      <div class="stat-val red" id="home-vat">₮0</div>
     </div>
-
-    <div style="padding:0 16px;margin-bottom:8px;font-size:12px;color:var(--hint)">
-      현금 잔액 <span id="cash-balance" style="font-family:var(--mono);font-weight:600;color:var(--txt)">₮0</span> — 
-      납부 상태: <span id="pay-status-badge"></span>
+    <div class="stat-cell">
+      <div class="stat-lbl">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        소득세 (6%)
+      </div>
+      <div class="stat-val red" id="home-it">₮0</div>
     </div>
+    <div class="stat-cell">
+      <div class="stat-lbl">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        납부 총액
+      </div>
+      <div class="stat-val red" id="home-total">₮0</div>
+    </div>
+  </div>
 
-    <button class="pay-btn" id="pay-btn" onclick="goScreen('screen-pay')">
-      <span>💰</span> <span id="pay-btn-text">납부 신청하기</span>
+  <div class="section-hd">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    납부 내역
+  </div>
+
+  <div class="card">
+    <div class="card-hd">
+      <span class="card-hd-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        2026년 2분기 세금 내역
+      </span>
+      <span class="card-hd-sub">2026.04.01 ~ 06.30</span>
+    </div>
+    <div class="card-row"><span class="card-key">총 매출액</span><span class="card-val" id="bd-rev">₮0</span></div>
+    <div class="card-row"><span class="card-key">필요경비 (판관비)</span><span class="card-val grn" id="bd-opex">- ₮0</span></div>
+    <div class="card-row"><span class="card-key">과세표준 (순소득)</span><span class="card-val" id="bd-income">₮0</span></div>
+    <div class="card-row"><span class="card-key">부가가치세 (10%)</span><span class="card-val red" id="bd-vat">₮0</span></div>
+    <div class="card-row"><span class="card-key">종합소득세 (6%)</span><span class="card-val red" id="bd-it">₮0</span></div>
+    <div class="card-row" style="background:var(--bg2)"><span class="card-key" style="font-weight:600;color:var(--txt)">납부 총액</span><span class="card-val total" id="bd-total">₮0</span></div>
+  </div>
+
+  <div class="cash-bar">
+    <div style="display:flex;align-items:center;gap:6px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      현금 잔액
+    </div>
+    <span class="cash-bar-val" id="cash-balance">₮0</span>
+  </div>
+
+  <button class="btn-primary accent" id="pay-btn" onclick="goScreen('screen-pay')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="pay-btn-text">납부 신청하기</span>
+  </button>
+  <button class="btn-outline" onclick="goScreen('screen-calc')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+    직접 계산해보기
+  </button>
+
+  <div class="section-hd">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    납세 내역
+  </div>
+  <div class="history-wrap" id="history-list" style="padding-bottom:80px">
+    <div style="color:var(--txt4);text-align:center;padding:20px;font-size:13px">불러오는 중…</div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="goScreen('screen-home')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="nav-lbl">홈</span>
     </button>
-    <button class="btn-out" onclick="goScreen('screen-calc')">🧮 직접 계산해보기</button>
-
-    <div class="section-heading">납세 내역</div>
-    <div class="history-list" id="history-list">
-      <div style="color:var(--hint);text-align:center;padding:20px">불러오는 중…</div>
-    </div>
-
-    <div class="bottom-nav">
-      <button class="nav-item active" onclick="goScreen('screen-home')"><div class="nav-item-icon">🏠</div><div class="nav-item-label">홈</div></button>
-      <button class="nav-item" onclick="goScreen('screen-calc')"><div class="nav-item-icon">🧮</div><div class="nav-item-label">계산</div></button>
-      <button class="nav-item" onclick="goScreen('screen-history')"><div class="nav-item-icon">📋</div><div class="nav-item-label">내역</div></button>
-      <button class="nav-item" onclick="goScreen('screen-mypage')"><div class="nav-item-icon">👤</div><div class="nav-item-label">마이</div></button>
-    </div>
+    <button class="nav-item" onclick="goScreen('screen-calc')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+      <span class="nav-lbl">계산</span>
+    </button>
+    <button class="nav-item" onclick="goScreen('screen-history')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="nav-lbl">내역</span>
+    </button>
+    <button class="nav-item" onclick="goScreen('screen-mypage')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-lbl">마이</span>
+    </button>
   </div>
+</div>
 
-  <!-- CALCULATOR SCREEN -->
-  <div class="screen hidden" id="screen-calc">
-    <div class="topbar">
-      <button class="topbar-back" onclick="goBack()">←</button>
-      <div class="topbar-info">
+<!-- ── CALCULATOR ──────────────────────────────────────── -->
+<div class="screen hidden" id="screen-calc">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goBack()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="topbar-brand">
+      <div>
         <div class="topbar-title">세금 계산기</div>
-        <div class="topbar-sub">매출·비용을 입력하세요</div>
       </div>
-    </div>
-    <div class="calc-scroll">
-      <div class="section-heading" style="padding-top:8px">입력값</div>
-      <div class="calc-input-card">
-        <div class="calc-card-header">매출 및 비용</div>
-        <div class="calc-input-row">
-          <span class="calc-label">총 매출액</span>
-          <input type="number" class="calc-input" id="c-rev" value="0" min="0" oninput="calcTax()">
-          <span class="calc-unit">₮</span>
-        </div>
-        <div class="calc-input-row">
-          <span class="calc-label">필요경비</span>
-          <input type="number" class="calc-input" id="c-opex" value="0" min="0" oninput="calcTax()">
-          <span class="calc-unit">₮</span>
-        </div>
-        <div class="calc-input-row">
-          <span class="calc-label">부가세율</span>
-          <input type="number" class="calc-input" id="c-vat-rate" value="10" min="0" max="100" oninput="calcTax()">
-          <span class="calc-unit">%</span>
-        </div>
-        <div class="calc-input-row">
-          <span class="calc-label">소득세율</span>
-          <input type="number" class="calc-input" id="c-it-rate" value="6" min="0" max="45" oninput="calcTax()">
-          <span class="calc-unit">%</span>
-        </div>
-      </div>
-
-      <div class="section-heading" style="padding-top:0">계산 결과</div>
-      <div class="ai-result-box">
-        <div class="ai-result-title">🤖 AI 세금 계산 결과</div>
-        <div class="ai-result-row"><span class="ai-result-key">총 매출</span><span class="ai-result-val" id="cr-rev">₮0</span></div>
-        <div class="ai-result-row"><span class="ai-result-key">필요경비</span><span class="ai-result-val" id="cr-opex">₮0</span></div>
-        <div class="ai-result-row"><span class="ai-result-key">과세표준</span><span class="ai-result-val" id="cr-income">₮0</span></div>
-        <div class="ai-result-row"><span class="ai-result-key">부가가치세</span><span class="ai-result-val" id="cr-vat">₮0</span></div>
-        <div class="ai-result-row"><span class="ai-result-key">종합소득세</span><span class="ai-result-val" id="cr-it">₮0</span></div>
-        <div class="ai-result-row"><span class="ai-result-key">지방소득세 (10%)</span><span class="ai-result-val" id="cr-local">₮0</span></div>
-        <div class="ai-result-row" style="border-top:1px solid rgba(255,255,255,.2);margin-top:4px;padding-top:12px">
-          <span class="ai-result-key" style="font-weight:700">납부 총액</span>
-          <span class="ai-result-val total" id="cr-total">₮0</span>
-        </div>
-      </div>
-
-      <div style="background:var(--pri-lt);border-radius:10px;padding:12px 14px;margin:0 0 16px;font-size:12px;color:var(--pri);line-height:1.6">
-        ℹ️ 본 계산기는 참고용입니다. 정확한 세금은 담당 세무사 또는 국세청 홈택스를 통해 확인하세요.
-      </div>
-
-      <button class="pay-btn" onclick="goScreen('screen-pay')">
-        <span>💰</span> 이 금액으로 납부 신청
-      </button>
-    </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goScreen('screen-home')"><div class="nav-item-icon">🏠</div><div class="nav-item-label">홈</div></button>
-      <button class="nav-item active" onclick="goScreen('screen-calc')"><div class="nav-item-icon">🧮</div><div class="nav-item-label">계산</div></button>
-      <button class="nav-item" onclick="goScreen('screen-history')"><div class="nav-item-icon">📋</div><div class="nav-item-label">내역</div></button>
-      <button class="nav-item" onclick="goScreen('screen-mypage')"><div class="nav-item-icon">👤</div><div class="nav-item-label">마이</div></button>
     </div>
   </div>
+  <div class="calc-wrap">
+    <div class="calc-card">
+      <div class="calc-card-hd">입력값</div>
+      <div class="calc-row">
+        <span class="calc-lbl">총 매출액</span>
+        <input type="number" class="calc-input" id="c-rev" value="0" min="0" oninput="calcTax()">
+        <span class="calc-unit">₮</span>
+      </div>
+      <div class="calc-row">
+        <span class="calc-lbl">필요경비</span>
+        <input type="number" class="calc-input" id="c-opex" value="0" min="0" oninput="calcTax()">
+        <span class="calc-unit">₮</span>
+      </div>
+      <div class="calc-row">
+        <span class="calc-lbl">부가세율</span>
+        <input type="number" class="calc-input" id="c-vat-rate" value="10" min="0" max="100" oninput="calcTax()">
+        <span class="calc-unit">%</span>
+      </div>
+      <div class="calc-row">
+        <span class="calc-lbl">소득세율</span>
+        <input type="number" class="calc-input" id="c-it-rate" value="6" min="0" max="45" oninput="calcTax()">
+        <span class="calc-unit">%</span>
+      </div>
+    </div>
 
-  <!-- PAY SCREEN -->
-  <div class="screen hidden" id="screen-pay">
-    <div class="topbar">
-      <button class="topbar-back" onclick="goBack()">←</button>
-      <div class="topbar-info">
+    <div class="result-card">
+      <div class="result-hd">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        계산 결과
+      </div>
+      <div class="result-row"><span class="result-key">총 매출</span><span class="result-val" id="cr-rev">₮0</span></div>
+      <div class="result-row"><span class="result-key">필요경비</span><span class="result-val" id="cr-opex">₮0</span></div>
+      <div class="result-row"><span class="result-key">과세표준</span><span class="result-val" id="cr-income">₮0</span></div>
+      <div class="result-row"><span class="result-key">부가가치세</span><span class="result-val" id="cr-vat">₮0</span></div>
+      <div class="result-row"><span class="result-key">종합소득세</span><span class="result-val" id="cr-it">₮0</span></div>
+      <div class="result-row"><span class="result-key">지방소득세</span><span class="result-val" id="cr-local">₮0</span></div>
+      <div class="result-row"><span class="result-key" style="color:rgba(255,255,255,.8);font-weight:600">납부 총액</span><span class="result-val total" id="cr-total">₮0</span></div>
+    </div>
+
+    <div class="info-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      본 계산기는 참고용입니다. 정확한 세액은 국세청 홈택스를 통해 확인하세요.
+    </div>
+
+    <button class="btn-primary accent" onclick="calcTaxAndRecord().then(()=>goScreen('screen-pay'))">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      이 금액으로 납부 신청
+    </button>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="goScreen('screen-home')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="nav-lbl">홈</span>
+    </button>
+    <button class="nav-item active" onclick="goScreen('screen-calc')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+      <span class="nav-lbl">계산</span>
+    </button>
+    <button class="nav-item" onclick="goScreen('screen-history')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="nav-lbl">내역</span>
+    </button>
+    <button class="nav-item" onclick="goScreen('screen-mypage')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-lbl">마이</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── PAY ────────────────────────────────────────────── -->
+<div class="screen hidden" id="screen-pay">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goBack()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="topbar-brand">
+      <div>
         <div class="topbar-title">납부 신청</div>
         <div class="topbar-sub">국세청 자동 신고·납부</div>
       </div>
     </div>
-    <div class="calc-scroll">
-      <div class="section-heading" style="padding-top:8px">납부 내역 확인</div>
-      <div class="breakdown-card">
-        <div class="breakdown-header">
-          <span class="breakdown-title">2026년 2분기 납부 확인서</span>
-          <span class="breakdown-period">제주도 시범 서비스</span>
-        </div>
-        <div class="breakdown-row"><span class="breakdown-key">부가가치세</span><span class="breakdown-val red" id="pay-vat">₮0</span></div>
-        <div class="breakdown-row"><span class="breakdown-key">종합소득세</span><span class="breakdown-val red" id="pay-it">₮0</span></div>
-        <div class="breakdown-row"><span class="breakdown-key" style="font-weight:700">납부 총액</span><span class="breakdown-val total" id="pay-total">₮0</span></div>
-      </div>
-
-      <div class="section-heading" style="padding-top:0">납부 방법</div>
-      <div class="breakdown-card">
-        <div class="breakdown-row">
-          <span class="breakdown-key">납부 방법</span>
-          <span class="breakdown-val">GDC 자동 이체</span>
-        </div>
-        <div class="breakdown-row">
-          <span class="breakdown-key">현금 잔액</span>
-          <span class="breakdown-val grn" id="pay-cash">₮0</span>
-        </div>
-        <div class="breakdown-row">
-          <span class="breakdown-key">납부 후 잔액</span>
-          <span class="breakdown-val" id="pay-after">₮0</span>
-        </div>
-      </div>
-
-      <div style="background:#FEF9E7;border:1px solid #F0C040;border-radius:10px;padding:12px 14px;margin:0 0 16px;font-size:12px;color:#7D5A00;line-height:1.6">
-        ⚠️ 본 시스템은 시범 단계로, 실제 국세청 납부는 아직 연동되지 않았습니다. 납부 버튼 클릭 시 OpenHash 원장에만 기록됩니다.
-      </div>
-
-      <button class="pay-btn" id="confirm-pay-btn" onclick="confirmPay()">
-        <span>✓</span> <span id="confirm-pay-text">납부 확정</span>
-      </button>
-      <button class="btn-out" onclick="goBack()">취소</button>
-    </div>
   </div>
-
-  <!-- PAY RESULT SCREEN -->
-  <div class="screen hidden" id="screen-result">
-    <div style="background:var(--grn);padding:36px 20px 28px;text-align:center;color:#fff">
-      <div style="width:68px;height:68px;background:rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 14px;animation:pop .4s cubic-bezier(.34,1.56,.64,1)">✅</div>
-      <h3 style="font-size:20px;font-weight:700;margin-bottom:6px">납부 완료</h3>
-      <p style="font-size:13px;opacity:.9">OpenHash 원장에 기록되었습니다</p>
-      <div style="font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.2);border-radius:6px;padding:4px 12px;margin-top:10px;display:inline-block" id="result-tx-id">TX-2026-XXXXXXXX</div>
-    </div>
-    @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
-    <div style="padding:20px 16px 100px">
-      <div class="breakdown-card">
-        <div class="breakdown-header"><span class="breakdown-title">납부 영수증</span></div>
-        <div class="breakdown-row"><span class="breakdown-key">납부 일시</span><span class="breakdown-val" id="result-time">—</span></div>
-        <div class="breakdown-row"><span class="breakdown-key">납부 금액</span><span class="breakdown-val grn" id="result-amt">₮0</span></div>
-        <div class="breakdown-row"><span class="breakdown-key">납부 방법</span><span class="breakdown-val">GDC 자동 이체</span></div>
-        <div class="breakdown-row"><span class="breakdown-key">OpenHash TX</span><span class="breakdown-val" id="result-hash" style="font-family:var(--mono);font-size:11px">—</span></div>
+  <div class="calc-wrap">
+    <div class="section-hd" style="padding-left:0">납부 내역 확인</div>
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-hd-title">2026년 2분기 납부 확인서</span>
+        <span class="card-hd-sub">제주도 시범</span>
       </div>
-      <button class="pay-btn" onclick="goScreen('screen-home')" style="background:var(--pri)">🏠 홈으로</button>
+      <div class="card-row"><span class="card-key">부가가치세</span><span class="card-val red" id="pay-vat">₮0</span></div>
+      <div class="card-row"><span class="card-key">종합소득세</span><span class="card-val red" id="pay-it">₮0</span></div>
+      <div class="card-row" style="background:var(--bg2)"><span class="card-key" style="font-weight:600;color:var(--txt)">납부 총액</span><span class="card-val total" id="pay-total">₮0</span></div>
     </div>
-  </div>
 
-  <!-- HISTORY SCREEN -->
-  <div class="screen hidden" id="screen-history">
-    <div class="topbar">
-      <div class="topbar-logo">税</div>
-      <div class="topbar-info">
+    <div class="section-hd" style="padding-left:0">납부 방법</div>
+    <div class="card">
+      <div class="card-row"><span class="card-key">납부 방법</span><span class="card-val">GDC 자동 이체</span></div>
+      <div class="card-row"><span class="card-key">현금 잔액</span><span class="card-val grn" id="pay-cash">₮0</span></div>
+      <div class="card-row"><span class="card-key">납부 후 잔액</span><span class="card-val" id="pay-after">₮0</span></div>
+    </div>
+
+    <div class="warn-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      시범 단계입니다. 납부 버튼 클릭 시 OpenHash 원장에만 기록됩니다.
+    </div>
+
+    <button class="btn-primary" id="confirm-pay-btn" onclick="confirmPay()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <span id="confirm-pay-text">납부 확정</span>
+    </button>
+    <button class="btn-outline" onclick="goBack()">취소</button>
+  </div>
+</div>
+
+<!-- ── PAY RESULT ──────────────────────────────────────── -->
+<div class="screen hidden" id="screen-result">
+  <div class="result-header">
+    <div class="result-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="result-title">납부 완료</div>
+    <div class="result-sub">OpenHash 원장에 기록되었습니다</div>
+    <div class="result-tx" id="result-tx-id">TX-2026-XXXXXXXX</div>
+  </div>
+  <div style="padding:16px 16px 100px">
+    <div class="card">
+      <div class="card-hd"><span class="card-hd-title">납부 영수증</span></div>
+      <div class="card-row"><span class="card-key">납부 일시</span><span class="card-val" id="result-time">—</span></div>
+      <div class="card-row"><span class="card-key">납부 금액</span><span class="card-val grn" id="result-amt">₮0</span></div>
+      <div class="card-row"><span class="card-key">납부 방법</span><span class="card-val">GDC 자동 이체</span></div>
+      <div class="card-row"><span class="card-key">OpenHash TX</span><span class="card-val" id="result-hash" style="font-size:11px">—</span></div>
+    </div>
+    <button class="btn-primary" onclick="goScreen('screen-home')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      홈으로
+    </button>
+  </div>
+</div>
+
+<!-- ── HISTORY ──────────────────────────────────────────── -->
+<div class="screen hidden" id="screen-history">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div>
         <div class="topbar-title">납세 내역</div>
         <div class="topbar-sub">PDV 원장 기록</div>
       </div>
     </div>
-    <div style="padding:16px 16px 100px" id="history-body">
-      <div style="color:var(--hint);text-align:center;padding:40px">불러오는 중…</div>
-    </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goScreen('screen-home')"><div class="nav-item-icon">🏠</div><div class="nav-item-label">홈</div></button>
-      <button class="nav-item" onclick="goScreen('screen-calc')"><div class="nav-item-icon">🧮</div><div class="nav-item-label">계산</div></button>
-      <button class="nav-item active"><div class="nav-item-icon">📋</div><div class="nav-item-label">내역</div></button>
-      <button class="nav-item" onclick="goScreen('screen-mypage')"><div class="nav-item-icon">👤</div><div class="nav-item-label">마이</div></button>
-    </div>
   </div>
+  <div style="padding:12px 16px 100px" id="history-body">
+    <div style="color:var(--txt4);text-align:center;padding:40px;font-size:13px">불러오는 중…</div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="goScreen('screen-home')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="nav-lbl">홈</span>
+    </button>
+    <button class="nav-item" onclick="goScreen('screen-calc')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+      <span class="nav-lbl">계산</span>
+    </button>
+    <button class="nav-item active">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="nav-lbl">내역</span>
+    </button>
+    <button class="nav-item" onclick="goScreen('screen-mypage')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-lbl">마이</span>
+    </button>
+  </div>
+</div>
 
-  <!-- MYPAGE SCREEN -->
-  <div class="screen hidden" id="screen-mypage">
-    <div class="mypage-header">
-      <div class="mypage-avatar">👤</div>
-      <div class="mypage-name" id="mp-name">—</div>
-      <div class="mypage-guid" id="mp-guid">guid: —</div>
-      <div class="mypage-stats">
-        <div class="mypage-stat-item">
-          <span class="mypage-stat-val" id="mp-rev">₮0</span>
-          <div class="mypage-stat-label">2Q 매출</div>
-        </div>
-        <div class="mypage-stat-item">
-          <span class="mypage-stat-val" id="mp-tax">₮0</span>
-          <div class="mypage-stat-label">납부 세금</div>
-        </div>
+<!-- ── MYPAGE ──────────────────────────────────────────── -->
+<div class="screen hidden" id="screen-mypage">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
-    </div>
-    <div class="mypage-body">
-      <div class="menu-group">
-        <div class="menu-item"><span class="menu-icon">📊</span><span class="menu-text">재무제표 조회</span><span class="menu-arrow">›</span></div>
-        <div class="menu-item"><span class="menu-icon">🧾</span><span class="menu-text">납세 신고서 다운로드</span><span class="menu-arrow">›</span></div>
-        <div class="menu-item"><span class="menu-icon">⛓</span><span class="menu-text">OpenHash 원장 조회</span><span class="menu-arrow">›</span></div>
-      </div>
-      <div class="menu-group">
-        <div class="menu-item"><span class="menu-icon">🏠</span><span class="menu-text">고팡 마켓으로 이동</span><span class="menu-arrow">›</span></div>
-        <div class="menu-item" onclick="location.href='dashboard.html'"><span class="menu-icon">🖥</span><span class="menu-text">관리자 대시보드</span><span class="menu-arrow">›</span></div>
-        <div class="menu-item" onclick="location.href='index.html'"><span class="menu-icon">ℹ️</span><span class="menu-text">서비스 소개</span><span class="menu-arrow">›</span></div>
-      </div>
-    </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goScreen('screen-home')"><div class="nav-item-icon">🏠</div><div class="nav-item-label">홈</div></button>
-      <button class="nav-item" onclick="goScreen('screen-calc')"><div class="nav-item-icon">🧮</div><div class="nav-item-label">계산</div></button>
-      <button class="nav-item" onclick="goScreen('screen-history')"><div class="nav-item-icon">📋</div><div class="nav-item-label">내역</div></button>
-      <button class="nav-item active"><div class="nav-item-icon">👤</div><div class="nav-item-label">마이</div></button>
+      <div><div class="topbar-title">마이페이지</div></div>
     </div>
   </div>
+  <div class="mypage-hd">
+    <div class="mypage-row">
+      <div class="mypage-avatar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div>
+        <div class="mypage-name" id="mp-name">—</div>
+        <div class="mypage-guid" id="mp-guid">guid: —</div>
+      </div>
+    </div>
+    <div class="mypage-stats">
+      <div class="mypage-stat">
+        <div class="mypage-stat-val" id="mp-rev">₮0</div>
+        <div class="mypage-stat-lbl">2Q 매출</div>
+      </div>
+      <div class="mypage-stat">
+        <div class="mypage-stat-val" id="mp-tax">₮0</div>
+        <div class="mypage-stat-lbl">납부 세금</div>
+      </div>
+    </div>
+  </div>
+  <div class="mypage-body">
+    <div class="menu-group">
+      <div class="menu-item">
+        <div class="menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <span class="menu-text">재무제표 조회</span>
+        <svg class="menu-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <span class="menu-text">납세 신고서 다운로드</span>
+        <svg class="menu-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <span class="menu-text">OpenHash 원장 조회</span>
+        <svg class="menu-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="menu-group">
+      <div class="menu-item">
+        <div class="menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></div>
+        <span class="menu-text">고팡 마켓으로 이동</span>
+        <svg class="menu-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="menu-item" onclick="location.href='dashboard.html'">
+        <div class="menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+        <span class="menu-text">관리자 대시보드</span>
+        <svg class="menu-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="menu-item" onclick="location.href='index.html'">
+        <div class="menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <span class="menu-text">서비스 소개</span>
+        <svg class="menu-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="goScreen('screen-home')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="nav-lbl">홈</span>
+    </button>
+    <button class="nav-item" onclick="goScreen('screen-calc')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+      <span class="nav-lbl">계산</span>
+    </button>
+    <button class="nav-item" onclick="goScreen('screen-history')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="nav-lbl">내역</span>
+    </button>
+    <button class="nav-item active">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-lbl">마이</span>
+    </button>
+  </div>
+</div>
 
 </div><!-- /app -->
 
@@ -626,6 +773,33 @@ function calcTax(){
   document.getElementById('cr-total').textContent='₮'+fmt(t.total);
 }
 
+// ── T7: 세금 계산 완료 PDV (버튼 클릭 시 1회) ────────────────
+async function calcTaxAndRecord(){
+  calcTax();
+  if (!GUID) return;
+  const now = new Date().toISOString();
+  const rev  = parseFloat(document.getElementById('c-rev').value)||0;
+  const opex = parseFloat(document.getElementById('c-opex').value)||0;
+  const t    = calcTaxFromData(rev, opex);
+  await sendPDV(GUID, { level: 'L0', via: 'calculator' }, {
+    svc:  'ktax',
+    type: 'calculation',
+    who: {
+      ipv6:       GUID,
+      role:       'user',
+      level:      'L0',
+      recipients: ['gopang-pdv'],
+    },
+    when:  { period_start: now, period_end: now },
+    where: { svc_url: 'https://tax.gopang.net/webapp.html' },
+    what:  {
+      summary: `세금 계산 완료 — 매출 ₮${fmt(rev)} / VAT ₮${fmt(t.vat)} / IT ₮${fmt(t.it)} / 합계 ₮${fmt(t.total)}`,
+    },
+    how:  { method: 'K-Tax 계산기 수동 입력' },
+    why:  { goal: '납부 세액 사전 확인' },
+  });
+}
+
 // 납부 확정
 async function confirmPay(){
   const btn=document.getElementById('confirm-pay-btn');
@@ -651,6 +825,36 @@ async function confirmPay(){
       })
     });
   } catch(e){}
+
+  // ── T7: PDV — 납부 완료 거래 기록 ──────────────────────────
+  if (GUID) {
+    const periodStart = new Date(new Date().getFullYear(), 3, 1).toISOString(); // 2026-04-01 (2Q 시작)
+    await sendPDV(GUID, { level: 'L0', via: 'tax-payment' }, {
+      svc:  'ktax',
+      type: 'transaction',
+      who: {
+        ipv6:       GUID,
+        role:       'user',
+        level:      'L0',
+        recipients: ['gopang-pdv', 'nts'],
+      },
+      when: {
+        period_start: periodStart,
+        period_end:   now,
+      },
+      where: { svc_url: 'https://tax.gopang.net/webapp.html' },
+      what:  {
+        summary: `2026 Q2 세금 납부 완료 — VAT ₮${fmt(_taxData.vat)} / IT ₮${fmt(_taxData.it)} / 합계 ₮${fmt(_taxData.total)}`,
+        tx_id:   txId,
+      },
+      how: {
+        method:     'K-Tax 납부 확정 → OpenHash fs_ledger 기록',
+        tx_id:      txId,
+        counterpart:'jeju-tax-authority',
+      },
+      why: { goal: '2026년 2기 납세 의무 이행' },
+    });
+  }
 
   // 결과 화면
   document.getElementById('result-tx-id').textContent='TX-'+txId.slice(0,16).toUpperCase();
@@ -702,7 +906,7 @@ async function sendPDV(ipv6, user, reportOverride = null) {
   try {
     const now    = new Date().toISOString();
     const report = reportOverride || {
-      svc:  'tax',
+      svc:  'ktax',
       type: 'event',
       who: {
         ipv6:       ipv6,
@@ -732,6 +936,7 @@ async function sendPDV(ipv6, user, reportOverride = null) {
 
 // window 노출 — confirmPay 등에서 sendPDV 사용 가능
 window.sendPDV = sendPDV;
+window.calcTaxAndRecord = calcTaxAndRecord;
 </script>
 
 <!-- 고팡 SSO 인증 — 이 한 줄이 전부 -->
