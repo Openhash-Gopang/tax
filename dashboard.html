@@ -524,8 +524,79 @@ function closeSidebar(){
   setTimeout(tick,1000);
 })();
 
-loadData();
-setInterval(loadData,60000);
+
+// ══════════════════════════════════════════════════════════════════
+// 고팡 SSO 인증 콜백 (subsystem-auth.js 가 호출)
+// 대시보드는 관리자 뷰 — 인증 후 접속 PDV만 기록
+// ══════════════════════════════════════════════════════════════════
+const PROXY_BASE = 'https://gopang-proxy.tensor-city.workers.dev';
+let _dashGuid = null;
+let _dashUser = null;
+
+window._onGopangAuth = async function(user) {
+  console.log('[TAX-DASH] _onGopangAuth raw user:', JSON.stringify(user));
+
+  const guid = user?.ipv6 || user?.guid || null;
+  if (!guid) {
+    console.log('[TAX-DASH] 게스트 접속');
+    return;
+  }
+
+  _dashGuid = guid;
+  _dashUser = user;
+  console.log('[TAX-DASH] 인증 완료:', guid.slice(0, 16) + '…', '레벨:', user.level);
+
+  // 관리자 GUID → 상단 표시 (있을 경우)
+  const clockEl = document.getElementById('clock-wrap') || document.getElementById('clock');
+  if (clockEl) {
+    const badge = document.createElement('span');
+    badge.style.cssText = 'font-size:11px;color:var(--txt2);font-family:var(--mono);margin-right:8px;opacity:.6';
+    badge.textContent   = guid.slice(0, 12) + '… ✓';
+    clockEl.parentNode?.insertBefore(badge, clockEl);
+  }
+
+  // PDV — 관리자 대시보드 접속 이벤트
+  await sendDashPDV(guid, user);
+};
+
+async function sendDashPDV(ipv6, user, reportOverride = null) {
+  try {
+    const now    = new Date().toISOString();
+    const report = reportOverride || {
+      svc:  'ktax',
+      type: 'event',
+      who: {
+        ipv6:       ipv6,
+        role:       'admin',
+        level:      user?.level || 'L0',
+        recipients: ['gopang-pdv'],
+      },
+      when:  { period_start: now, period_end: now },
+      where: { svc_url: 'https://tax.gopang.net/dashboard.html' },
+      what:  { summary: 'K-Tax 관리자 대시보드 접속 — 납세 현황 조회' },
+      how:   { method: '고팡 SSO 자동 인증 (경로: ' + (user?.via || 'session') + ')' },
+      why:   { goal: '납세 현황 모니터링 및 관리' },
+    };
+
+    const res  = await fetch(PROXY_BASE + '/pdv/report', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ report }),
+    });
+    const data = await res.json();
+    console.log('[TAX-DASH PDV]', data.pdv_entry, data.message);
+    return data.pdv_entry;
+  } catch (e) {
+    console.warn('[TAX-DASH PDV] 전송 실패:', e.message);
+  }
+}
+
+window.sendDashPDV = sendDashPDV;
+</script>
+
+<!-- 고팡 SSO 인증 — 이 한 줄이 전부 -->
+<script type="module"
+  src="https://gopang.net/auth/subsystem-auth.js">
 </script>
 </body>
 </html>

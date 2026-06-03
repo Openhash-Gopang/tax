@@ -660,10 +660,83 @@ async function confirmPay(){
   goScreen('screen-result');
 }
 
-// Init
-window.addEventListener('load',()=>{
+// Init — SSO 인증 전이라도 익명 데이터는 미리 로드
+window.addEventListener('load', () => {
   loadHomeData();
 });
+
+
+// ══════════════════════════════════════════════════════════════════
+// 고팡 SSO 인증 콜백 (subsystem-auth.js 가 호출)
+// ══════════════════════════════════════════════════════════════════
+const PROXY_BASE = 'https://gopang-proxy.tensor-city.workers.dev';
+let GUID = null;
+
+window._onGopangAuth = async function(user) {
+  console.log('[TAX] _onGopangAuth raw user:', JSON.stringify(user));
+
+  const guid = user?.ipv6 || user?.guid || null;
+
+  if (!guid) {
+    console.log('[TAX] 게스트 접속 (GUID 없음)');
+    return;
+  }
+
+  GUID   = guid;
+  _guid  = guid;   // 기존 loadHomeData()·loadHistory() 에서 사용하는 변수 동기화
+  console.log('[TAX] 인증 완료:', guid.slice(0, 16) + '…', '레벨:', user.level);
+
+  // GUID 기반으로 홈 데이터 재로드 (인증 후 실제 데이터 반영)
+  await loadHomeData();
+
+  // 마이페이지 GUID 표시 갱신
+  const mpGuid = document.getElementById('mp-guid');
+  if (mpGuid) mpGuid.textContent = 'guid: ' + guid.slice(0, 24) + '…';
+
+  // PDV — 접속 이벤트 기록
+  await sendPDV(guid, user);
+};
+
+// ── PDV 전송 ─────────────────────────────────────────────────────
+async function sendPDV(ipv6, user, reportOverride = null) {
+  try {
+    const now    = new Date().toISOString();
+    const report = reportOverride || {
+      svc:  'ktax',
+      type: 'event',
+      who: {
+        ipv6:       ipv6,
+        role:       'user',
+        level:      user?.level || 'L0',
+        recipients: ['gopang-pdv'],
+      },
+      when:  { period_start: now, period_end: now },
+      where: { svc_url: 'https://tax.gopang.net/webapp.html' },
+      what:  { summary: 'K-Tax 앱 접속 — 세금 신고·세무 서비스 이용' },
+      how:   { method: '고팡 SSO 자동 인증 (경로: ' + (user?.via || 'session') + ')' },
+      why:   { goal: '세금 신고 및 세무 자동화 서비스 이용' },
+    };
+
+    const res  = await fetch(PROXY_BASE + '/pdv/report', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ report }),
+    });
+    const data = await res.json();
+    console.log('[TAX PDV]', data.pdv_entry, data.message);
+    return data.pdv_entry;
+  } catch (e) {
+    console.warn('[TAX PDV] 전송 실패:', e.message);
+  }
+}
+
+// window 노출 — confirmPay 등에서 sendPDV 사용 가능
+window.sendPDV = sendPDV;
+</script>
+
+<!-- 고팡 SSO 인증 — 이 한 줄이 전부 -->
+<script type="module"
+  src="https://gopang.net/auth/subsystem-auth.js">
 </script>
 </body>
 </html>
