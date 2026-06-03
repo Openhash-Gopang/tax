@@ -60,7 +60,7 @@ export const EXPERT_SP_MAP = {
   CUL: 'gopang/prompts/SP-11_kculture_v1.0.txt',
   SOC: 'gopang/prompts/SP-13_ksocial_v1.0.txt',
   IOT: 'gopang/prompts/SP-12_kiot_v1.0.txt',
-  TAX: 'prompts/SP-TAX_ktax_v1.0.txt',
+  TAX: 'prompts/SP-TAX_ktax_v2_0.txt',
 };
 
 export const DOMAIN_DETECT = [

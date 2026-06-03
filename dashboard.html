@@ -563,7 +563,7 @@ async function sendDashPDV(ipv6, user, reportOverride = null) {
   try {
     const now    = new Date().toISOString();
     const report = reportOverride || {
-      svc:  'ktax',
+      svc:  'tax',
       type: 'event',
       who: {
         ipv6:       ipv6,
