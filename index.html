@@ -4,8 +4,6 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>고팡 세무</title>
-
-  <!-- PWA -->
   <link rel="manifest" href="/manifest.json"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -15,117 +13,28 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="description" content="고팡 세무 — AI 납세·세무 서비스"/>
   <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
-
   <style>
-    :root {
-      --bg:    #0f172a;
-      --pri:   #3ecf8e;
-      --font:  'Noto Sans KR', -apple-system, sans-serif;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      font-family: var(--font);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      -webkit-font-smoothing: antialiased;
-    }
-    /* 스플래시 — 라우팅 완료 전 잠깐 표시 */
-    .splash {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-      opacity: 1;
-      transition: opacity 0.3s;
-    }
-    .splash-logo {
-      width: 72px; height: 72px;
-      background: var(--pri);
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      font-weight: 900;
-      color: #0f172a;
-      box-shadow: 0 0 40px rgba(62,207,142,0.35);
-    }
-    .splash-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: -0.3px;
-    }
-    .splash-sub {
-      font-size: 13px;
-      color: rgba(255,255,255,0.45);
-      margin-top: -12px;
-    }
-    .splash-spinner {
-      width: 24px; height: 24px;
-      border: 2px solid rgba(255,255,255,0.15);
-      border-top-color: var(--pri);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* 선택 화면 — 자동 감지 실패 시 수동 선택 */
-    .choose {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      text-align: center;
-      padding: 32px 24px;
-    }
-    .choose h2 {
-      font-size: 18px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 4px;
-    }
-    .choose p {
-      font-size: 13px;
-      color: rgba(255,255,255,0.5);
-      margin-bottom: 8px;
-      line-height: 1.6;
-    }
-    .choose-btns {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .choose-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 20px 28px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.05);
-      cursor: pointer;
-      color: #fff;
-      font-family: var(--font);
-      transition: background 0.15s, border-color 0.15s;
-      min-width: 140px;
-    }
-    .choose-btn:hover {
-      background: rgba(62,207,142,0.12);
-      border-color: var(--pri);
-    }
-    .choose-btn-icon { font-size: 32px; }
-    .choose-btn-label { font-size: 14px; font-weight: 600; }
-    .choose-btn-sub   { font-size: 11px; color: rgba(255,255,255,0.45); }
+    :root { --bg:#0f172a; --pri:#3ecf8e; --font:'Noto Sans KR',-apple-system,sans-serif; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:var(--bg);font-family:var(--font);display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+    .splash{display:flex;flex-direction:column;align-items:center;gap:20px;opacity:1;transition:opacity .3s}
+    .splash-logo{width:72px;height:72px;background:var(--pri);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#0f172a;box-shadow:0 0 40px rgba(62,207,142,.35)}
+    .splash-title{font-size:20px;font-weight:700;color:#fff;letter-spacing:-.3px}
+    .splash-sub{font-size:13px;color:rgba(255,255,255,.45);margin-top:-12px}
+    .splash-spinner{width:24px;height:24px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--pri);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .choose{display:none;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:32px 24px}
+    .choose h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
+    .choose p{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:8px;line-height:1.6}
+    .choose-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+    .choose-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 28px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);cursor:pointer;color:#fff;font-family:var(--font);transition:background .15s,border-color .15s;min-width:140px}
+    .choose-btn:hover{background:rgba(62,207,142,.12);border-color:var(--pri)}
+    .choose-btn-icon{font-size:32px}
+    .choose-btn-label{font-size:14px;font-weight:600}
+    .choose-btn-sub{font-size:11px;color:rgba(255,255,255,.45)}
   </style>
 </head>
 <body>
-
 <div class="splash" id="splash">
   <div class="splash-logo">₮</div>
   <div>
@@ -134,16 +43,15 @@
   </div>
   <div class="splash-spinner"></div>
 </div>
-
 <div class="choose" id="choose">
   <div class="splash-logo">₮</div>
   <h2>환경을 선택하세요</h2>
   <p>화면 크기를 자동으로 감지하지 못했습니다.<br>사용 환경에 맞는 버전을 선택해 주세요.</p>
   <div class="choose-btns">
-    <button class="choose-btn" onclick="go('dashboard.html')">
+    <button class="choose-btn" onclick="go('desktop.html')">
       <span class="choose-btn-icon">🖥️</span>
       <span class="choose-btn-label">PC / 관리자</span>
-      <span class="choose-btn-sub">대시보드 · 전체 납세 현황</span>
+      <span class="choose-btn-sub">시스템 소개 · 대시보드</span>
     </button>
     <button class="choose-btn" onclick="go('webapp.html')">
       <span class="choose-btn-icon">📱</span>
@@ -152,61 +60,36 @@
     </button>
   </div>
 </div>
-
 <script>
-  /* ── 디바이스 감지 기준 ────────────────────────────────────────
-     모바일: 화면 너비 ≤ 768px  OR  터치 전용 기기
-     PC     : 화면 너비 > 768px AND 마우스 포인터 지원
-  ─────────────────────────────────────────────────────────────── */
   function detectDevice() {
-    const w          = window.innerWidth  || screen.width;
-    const h          = window.innerHeight || screen.height;
-    const hasCoarse  = window.matchMedia('(pointer: coarse)').matches;   // 터치스크린
-    const hasFine    = window.matchMedia('(pointer: fine)').matches;     // 마우스
-    const isNarrow   = w <= 768;
-    const isVeryNarrow = w <= 430;
-
-    // 명확한 케이스
-    if (isVeryNarrow)            return 'mobile';   // 430px 이하 → 무조건 모바일
-    if (!isNarrow && hasFine)    return 'desktop';  // 769px+ + 마우스 → 데스크톱
-    if (isNarrow  && hasCoarse)  return 'mobile';   // 768px- + 터치 → 모바일
-
-    // 중간 영역 (태블릿 등) — 포인터 방식으로 결정
+    const w         = window.innerWidth  || screen.width;
+    const hasCoarse = window.matchMedia('(pointer: coarse)').matches;
+    const hasFine   = window.matchMedia('(pointer: fine)').matches;
+    const isNarrow  = w <= 768;
+    if (w <= 430)            return 'mobile';
+    if (!isNarrow && hasFine) return 'desktop';
+    if (isNarrow && hasCoarse) return 'mobile';
     if (hasFine)   return 'desktop';
     if (hasCoarse) return 'mobile';
-
-    // 감지 실패 — 수동 선택 UI 표시
     return null;
   }
-
   function go(url) {
-    // URL 파라미터 전달 (gwp_token 등 유지)
     const params = new URLSearchParams(location.search);
     const hash   = location.hash;
     const qs     = params.toString() ? '?' + params.toString() : '';
     location.replace(url + qs + hash);
   }
-
   function route() {
     const device = detectDevice();
-
-    if (device === 'desktop') {
-      go('dashboard.html');
-    } else if (device === 'mobile') {
-      go('webapp.html');
-    } else {
-      // 자동 감지 실패 → 수동 선택 UI
-      document.getElementById('splash').style.display  = 'none';
-      document.getElementById('choose').style.display  = 'flex';
+    if      (device === 'desktop') go('desktop.html');
+    else if (device === 'mobile')  go('webapp.html');
+    else {
+      document.getElementById('splash').style.display = 'none';
+      document.getElementById('choose').style.display = 'flex';
     }
   }
-
-  // DOM 준비 후 즉시 라우팅 (스플래시 최소 노출)
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', route);
-  } else {
-    route();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', route);
+  else route();
 </script>
 </body>
 </html>
