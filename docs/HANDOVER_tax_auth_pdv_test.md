@@ -1,10 +1,10 @@
 # 인수인계 지시서
-## tax.gopang.net — 고팡 SSO 인증 및 PDV 저장 테스트
+## tax.hondi.net — 고팡 SSO 인증 및 PDV 저장 테스트
 
 > **작성일:** 2026-06-03  
 > **작성자:** AI City Inc. (팀 주피터)  
 > **참조:** `Openhash-Gopang/gopang_v2`, `Openhash-Gopang/gdc`  
-> **선행 완료:** gdc.gopang.net T1~T9 전체 통과
+> **선행 완료:** gdc.hondi.net T1~T9 전체 통과
 
 ---
 
@@ -14,12 +14,12 @@
 
 ```html
 <script type="module"
-  src="https://gopang.net/auth/subsystem-auth.js">
+  src="https://hondi.net/auth/subsystem-auth.js">
 </script>
 ```
 
-인증 로직 전체가 `gopang.net`에서 원격으로 실행됩니다.  
-`tax.gopang.net`은 자체 인증 파일을 두지 않습니다.
+인증 로직 전체가 `hondi.net`에서 원격으로 실행됩니다.  
+`tax.hondi.net`은 자체 인증 파일을 두지 않습니다.
 
 ---
 
@@ -28,12 +28,12 @@
 ### 2-1. 인증 경로 (자동 순서)
 
 ```
-tax.gopang.net 접속
+tax.hondi.net 접속
         │
         ├─ ① GWP 토큰 확인     (?gwp_token= 파싱)
         ├─ ② 세션 캐시 확인    (sessionStorage)
         ├─ ③ 로컬 기기 확인    (localStorage + 기기 핑거프린트)
-        ├─ ④ Silent iframe     (gopang.net/auth/silent-auth.html)
+        ├─ ④ Silent iframe     (hondi.net/auth/silent-auth.html)
         └─ ⑤ 리다이렉트        (미등록 사용자 → 고팡 등록 후 복귀)
 ```
 
@@ -61,16 +61,16 @@ POST https://gopang-proxy.tensor-city.workers.dev/pdv/report
 Content-Type: application/json
 ```
 
-- `tax.gopang.net`은 `gopang-proxy`의 `REGISTERED_SERVICES`에 이미 등록됨
+- `tax.hondi.net`은 `gopang-proxy`의 `REGISTERED_SERVICES`에 이미 등록됨
 - `minAuth: 'L0'`, `pdv: true`, Level 3 서비스
 
 ---
 
-## § 3. 구현 — tax.gopang.net HTML 수정
+## § 3. 구현 — tax.hondi.net HTML 수정
 
 ### 3-1. 추가할 코드 (2개 블록)
 
-`tax.gopang.net`의 메인 HTML 파일 (`webapp.html` 또는 `index.html`)에 아래를 추가합니다.
+`tax.hondi.net`의 메인 HTML 파일 (`webapp.html` 또는 `index.html`)에 아래를 추가합니다.
 
 **① `</script>` 닫기 직전 (기존 JS 블록 내부):**
 
@@ -113,7 +113,7 @@ async function sendPDV(ipv6, user, reportOverride = null) {
         recipients: ['gopang-pdv'],
       },
       when:  { period_start: now, period_end: now },
-      where: { svc_url: 'https://tax.gopang.net/webapp.html' },
+      where: { svc_url: 'https://tax.hondi.net/webapp.html' },
       what:  { summary: 'K-Tax 앱 접속 — 세금 신고·세무 서비스 이용' },
       how:   { method: '고팡 SSO 자동 인증 (경로: ' + (user?.via || 'session') + ')' },
       why:   { goal: '세금 신고 및 세무 자동화 서비스 이용' },
@@ -138,7 +138,7 @@ async function sendPDV(ipv6, user, reportOverride = null) {
 ```html
 <!-- 고팡 SSO 인증 — 이 한 줄이 전부 -->
 <script type="module"
-  src="https://gopang.net/auth/subsystem-auth.js">
+  src="https://hondi.net/auth/subsystem-auth.js">
 </script>
 ```
 
@@ -149,7 +149,7 @@ async function sendPDV(ipv6, user, reportOverride = null) {
 ### T1 — 코드 삽입 확인
 
 ```
-tax.gopang.net HTML에:
+tax.hondi.net HTML에:
 □ window._onGopangAuth 함수 정의
 □ sendPDV 함수 정의 (svc: 'ktax')
 □ subsystem-auth.js script 태그 (</body> 직전)
@@ -160,13 +160,13 @@ tax.gopang.net HTML에:
 
 ```
 □ 수정된 파일을 GitHub에 push
-□ tax.gopang.net 접속 시 변경사항 반영 확인
+□ tax.hondi.net 접속 시 변경사항 반영 확인
 □ F12 → Console 탭 열기
 ```
 
 ### T3 — SSO 인증 확인
 
-`https://tax.gopang.net` 접속 후 Console에서:
+`https://tax.hondi.net` 접속 후 Console에서:
 
 ```
 ✅ [SSO] 경로2A 세션 캐시 ✅   또는
@@ -176,8 +176,8 @@ tax.gopang.net HTML에:
 ```
 
 **고팡 미로그인 상태라면:**
-→ `gopang.net/auth/silent-auth.html`로 자동 이동
-→ 로그인 후 `tax.gopang.net`으로 자동 복귀
+→ `hondi.net/auth/silent-auth.html`로 자동 이동
+→ 로그인 후 `tax.hondi.net`으로 자동 복귀
 
 ### T4 — user.ipv6 수신 확인
 
@@ -240,7 +240,7 @@ await sendPDV(GUID, { ipv6: GUID, level: 'L0', via: 'tax' }, {
     level: 'L0', recipients: ['gopang-pdv'],
   },
   when:  { period_start: now, period_end: now },
-  where: { svc_url: 'https://tax.gopang.net/webapp.html' },
+  where: { svc_url: 'https://tax.hondi.net/webapp.html' },
   what:  { summary: '종합소득세 신고 완료 (2025년 귀속)' },
   how:   { method: 'K-Tax AI 자동 신고' },
   why:   { goal: '연간 소득세 신고' },
@@ -255,7 +255,7 @@ await sendPDV(GUID, { ipv6: GUID, level: 'L0', via: 'tax' }, {
 |------|------|------|
 | `user.guid is null` | `user.ipv6` 필드 사용해야 함 | `user?.ipv6 \|\| user?.guid`로 수정 |
 | PDV 403 Forbidden | `report.who.ipv6` 누락 또는 `svc` 미등록 | `svc: 'ktax'`, `who.ipv6` 확인 |
-| 고팡 인증 후 복귀 안됨 | `file://` 로컬 파일로 테스트 | 반드시 `https://tax.gopang.net`으로 접속 |
+| 고팡 인증 후 복귀 안됨 | `file://` 로컬 파일로 테스트 | 반드시 `https://tax.hondi.net`으로 접속 |
 | Console 로그 없음 | `subsystem-auth.js` 미로드 | `</body>` 직전 script 태그 확인 |
 | `Cannot read 'slice' of null` | GUID null인 채로 함수 실행 | `if (!guid) return` 가드 추가 |
 

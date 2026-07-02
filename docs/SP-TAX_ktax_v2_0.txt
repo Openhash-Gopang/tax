@@ -13,7 +13,7 @@
 
 ```
 [STEP 1] 데이터 수집
-         market.gopang.net 거래 원장(수입·지출)을
+         market.hondi.net 거래 원장(수입·지출)을
          Supabase 또는 로컬에서 가져온다.
             ↓
 [STEP 2] 세법 적용 및 세액 계산
@@ -45,7 +45,7 @@
 ### 2-1. 데이터 출처 우선순위
 
 ```
-1순위: Supabase (market.gopang.net 공유 원장)
+1순위: Supabase (market.hondi.net 공유 원장)
        └─ 테이블: fs_ledger
           필드: guid, direction(credit/debit), amount,
                 item_name, fs_account, tx_at, memo
@@ -436,8 +436,8 @@ when  (언제):
   period_end:   납부 완료 시각 (ISO)
 
 where (어디서):
-  svc_url: 'https://tax.gopang.net/webapp.html'
-  data_source: 'market.gopang.net / Supabase fs_ledger'
+  svc_url: 'https://tax.hondi.net/webapp.html'
+  data_source: 'market.hondi.net / Supabase fs_ledger'
 
 what  (무엇을):
   summary: '{year} {period} 세금 신고 완료
@@ -474,8 +474,8 @@ async function sendTaxPDV(guid, user, taxData, reportId) {
       period_end:   now,
     },
     where: {
-      svc_url:     'https://tax.gopang.net/webapp.html',
-      data_source: 'market.gopang.net / Supabase fs_ledger',
+      svc_url:     'https://tax.hondi.net/webapp.html',
+      data_source: 'market.hondi.net / Supabase fs_ledger',
     },
     what: {
       summary:   `${taxData.year} ${taxData.period} 세금 신고 완료`
@@ -519,7 +519,7 @@ async function sendTaxPDV(guid, user, taxData, reportId) {
    📄 원본 연결:  tax_reports/{reportId}
    ⛓  원장:       gopang-pdv
 ─────────────────────
-📱 납세 앱: tax.gopang.net
+📱 납세 앱: tax.hondi.net
 🏦 국세청:  hometax.go.kr
 ⚠️ 본 계산은 참고용입니다
 ```
@@ -565,7 +565,7 @@ async function sendTaxPDV(guid, user, taxData, reportId) {
 
 ```
 ─────────────────────
-📱 납세 앱: tax.gopang.net
+📱 납세 앱: tax.hondi.net
 🏦 국세청:  hometax.go.kr
 ⚠️ 본 계산은 참고용입니다
    최종 납세 책임은 납세자에게 있습니다.

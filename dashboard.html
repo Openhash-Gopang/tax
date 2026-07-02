@@ -929,7 +929,7 @@ async function sendDashPDV(ipv6, user, reportOverride = null) {
         recipients: ['gopang-pdv'],
       },
       when:  { period_start: now, period_end: now },
-      where: { svc_url: 'https://tax.gopang.net/webapp.html' }, // registry 등록 URL과 일치
+      where: { svc_url: 'https://tax.hondi.net/webapp.html' }, // registry 등록 URL과 일치
       what:  { summary: 'K-Tax 대시보드 접속 — 납세 현황 조회 (관리자)' },
       how:   { method: '고팡 SSO 자동 인증 (경로: ' + (user?.via || 'session') + ')' },
       why:   { goal: '납세 현황 모니터링 및 관리' },
@@ -961,7 +961,7 @@ window.sendDashPDV = sendDashPDV;
 
 <!-- 고팡 SSO 인증 — 이 한 줄이 전부 -->
 <script type="module"
-  src="https://gopang.net/auth/subsystem-auth.js">
+  src="https://hondi.net/auth/subsystem-auth.js">
 </script>
 </body>
 </html>

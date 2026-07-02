@@ -1,5 +1,5 @@
 # K-Tax Whitepaper v1.0
-## tax.gopang.net — AI 세무 자동화 시스템
+## tax.hondi.net — AI 세무 자동화 시스템
 
 > **작성일:** 2026-06-04  
 > **작성자:** AI City Inc. (팀 주피터)  
@@ -32,13 +32,13 @@
 
 ## 1. 시스템 개요
 
-K-Tax(`tax.gopang.net`)는 고팡 플랫폼의 **AI 세무 자동화 하위 시스템**이다.
+K-Tax(`tax.hondi.net`)는 고팡 플랫폼의 **AI 세무 자동화 하위 시스템**이다.
 
 ### 핵심 기능
 
 | 기능 | 설명 |
 |---|---|
-| **데이터 수집** | `market.gopang.net` 거래 원장(`fs_ledger`)에서 수입·지출 자동 집계 |
+| **데이터 수집** | `market.hondi.net` 거래 원장(`fs_ledger`)에서 수입·지출 자동 집계 |
 | **세법 적용** | 현행 한국 세법(부가세·소득세·지방소득세) 자동 계산 |
 | **납부 실행** | OpenHash `fs_ledger`에 납세 트랜잭션 기록 |
 | **보고서 저장** | `tax_reports` 테이블에 원본 보고서 저장 |
@@ -63,7 +63,7 @@ tax    → extra.fs  (읽기) + fs_ledger (쓰기: 납세)
 ### 전체 데이터 흐름
 
 ```
-market.gopang.net
+market.hondi.net
   거래 발생 (AI [TRADE] 블록 파싱)
        │
        ▼ INSERT
@@ -74,7 +74,7 @@ market.gopang.net
   └─────────────────────────────────────────┘
        │ READ (revenue/purchase/opex 집계)
        ▼
-gdc.gopang.net
+gdc.hondi.net
   settleLedger() — 홈 화면 로드 시 자동 실행
        │
        ▼ PATCH
@@ -89,7 +89,7 @@ gdc.gopang.net
   └─────────────────────────────────────────┘
        │ READ
        ▼
-tax.gopang.net
+tax.hondi.net
   세금 계산 (부가세·소득세·지방소득세)
        │
        ▼ INSERT
@@ -102,10 +102,10 @@ tax.gopang.net
 ### 고팡 플랫폼 내 위치
 
 ```
-gopang.net (메인)
+hondi.net (메인)
   │
   ├── gwp-registry.js — 서비스 라우터
-  │     id: 'ktax' → tax.gopang.net
+  │     id: 'ktax' → tax.hondi.net
   │     트리거: 세금, 납세, 부가세, 소득세 ...
   │
   ├── gopang-proxy (Cloudflare Worker v4.3)
@@ -113,7 +113,7 @@ gopang.net (메인)
   │     /auth/*        — SSO 인증
   │     SVC_ALIAS: 'ktax' → 'tax'
   │
-  └── tax.gopang.net
+  └── tax.hondi.net
         index.html     — 디바이스 라우터
         webapp.html    — 모바일 납세 앱
         dashboard.html — PC 관리자 대시보드
@@ -125,11 +125,11 @@ gopang.net (메인)
 ## 3. 파일 구조
 
 ```
-tax.gopang.net/
+tax.hondi.net/
 ├── index.html                  # 디바이스 감지 → 라우터
 ├── webapp.html                 # 모바일 납세 앱 (430px)
 ├── dashboard.html              # PC 관리자 대시보드
-├── CNAME                       # tax.gopang.net
+├── CNAME                       # tax.hondi.net
 ├── config.js                   # 고팡 전역 상수
 ├── HANDOVER_tax_auth_pdv_test.md
 └── prompts/
@@ -198,21 +198,21 @@ Supabase SQL Editor 스타일. 좌측 사이드바 + 메인 뷰 전환 구조.
 ```html
 <!-- 모든 하위 시스템은 </body> 직전에 이 한 줄만 추가 -->
 <script type="module"
-  src="https://gopang.net/auth/subsystem-auth.js">
+  src="https://hondi.net/auth/subsystem-auth.js">
 </script>
 ```
 
-인증 로직 전체가 `gopang.net`에서 원격 실행된다. `tax.gopang.net`은 자체 인증 파일을 두지 않는다.
+인증 로직 전체가 `hondi.net`에서 원격 실행된다. `tax.hondi.net`은 자체 인증 파일을 두지 않는다.
 
 ### 5-2. 인증 경로 (자동 순서)
 
 ```
-tax.gopang.net 접속
+tax.hondi.net 접속
   │
   ├─ ① GWP 토큰 확인   (?gwp_token= 파싱)
   ├─ ② 세션 캐시 확인  (sessionStorage)
   ├─ ③ 로컬 기기 확인  (localStorage + 기기 핑거프린트)
-  ├─ ④ Silent iframe   (gopang.net/auth/silent-auth.html)
+  ├─ ④ Silent iframe   (hondi.net/auth/silent-auth.html)
   └─ ⑤ 리다이렉트      (미등록 → 고팡 등록 후 복귀)
 ```
 
@@ -264,7 +264,7 @@ Content-Type: application/json
 |---|---|---|
 | **누가** | `who.ipv6` | `2601:db80:...` |
 | **언제** | `when.period_start/end` | ISO timestamp |
-| **어디서** | `where.svc_url` | `https://tax.gopang.net/webapp.html` |
+| **어디서** | `where.svc_url` | `https://tax.hondi.net/webapp.html` |
 | **무엇을** | `what.summary` | `2026 Q2 세금 납부 완료 — VAT ₮408,900 / IT ₮244,855` |
 | **어떻게** | `how.method` | `K-Tax 납부 확정 → OpenHash fs_ledger 기록` |
 | **왜** | `why.goal` | `2026년 2기 납세 의무 이행` |
@@ -490,7 +490,7 @@ const total = vat + it + local;
 
 | 버전 | 변경 내용 |
 |---|---|
-| v4.1 | `police.gopang.net` CORS 추가, `/chat/completions` 라우트 추가 |
+| v4.1 | `police.hondi.net` CORS 추가, `/chat/completions` 라우트 추가 |
 | v4.2 | `insurance`·`911` CORS 추가, `stock`·`traffic`·`logistics` 신규 등록 |
 | **v4.3** | **`SVC_ALIAS` 추가 — `gwp-registry.js` k-prefix ID 자동 resolve** |
 
@@ -563,7 +563,7 @@ function _getSvcRegistration(origin, svcId) {
      BODY: {"error":"PDV_NOT_ALLOWED","detail":"Level 1..."}
   4. _getSvcRegistration 분석:
      svcId='ktax' → REGISTERED_SERVICES['ktax'] → undefined
-     → *.gopang.net fallback → level:1, pdv:false → 403
+     → *.hondi.net fallback → level:1, pdv:false → 403
   5. 근본 원인: gwp-registry.js id 'ktax' ≠ Worker key 'tax'
   6. 분석: 16개 중 15개 불일치 (klaw만 일치)
   7. 해결: SVC_ALIAS 테이블 추가 (Worker v4.3)
@@ -589,7 +589,7 @@ function _getSvcRegistration(origin, svcId) {
 
 ### T2 — 배포 확인
 
-GitHub push → `tax.gopang.net` 반영 확인.
+GitHub push → `tax.hondi.net` 반영 확인.
 
 **결과:** ✅ 통과
 
@@ -597,7 +597,7 @@ GitHub push → `tax.gopang.net` 반영 확인.
 
 ### T3 — SSO 인증 확인
 
-MS Edge 시크릿 창 → `tax.gopang.net` 접속 → 고팡 로그인 → 리다이렉트 복귀.
+MS Edge 시크릿 창 → `tax.hondi.net` 접속 → 고팡 로그인 → 리다이렉트 복귀.
 
 ```
 Console 확인:

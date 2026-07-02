@@ -35,14 +35,14 @@ export const GWP_REGISTRY = [
     id:       'gopang-tax',
     name:     '고팡 세무',
     icon:     '\uD83D\uDCB0',
-    url: location.hostname === 'localhost' ? 'http://localhost:3001/webapp.html' : 'https://tax.gopang.net/webapp.html',
+    url: location.hostname === 'localhost' ? 'http://localhost:3001/webapp.html' : 'https://tax.hondi.net/webapp.html',
     triggers: ['\uC138\uAE08','\uB0A9\uC138','\uBD80\uAC00\uC138','\uC18C\uB4DD\uC138','\uBC95\uC778\uC138','\uC9C0\uBC29\uC138','\uC138\uBB34','\uC138\uAE08\uBCF4\uACE0\uC11C','\uB0A9\uBD80\uB0B4\uC5ED'],
   },
   {
     id:       'gopang-market',
     name:     '고팡 마켓',
     icon:     '\uD83D\uDED2',
-    url: location.hostname === 'localhost' ? 'http://localhost:3002/' : 'https://market.gopang.net/',
+    url: location.hostname === 'localhost' ? 'http://localhost:3002/' : 'https://market.hondi.net/',
     triggers: ['\uAD6C\uB9E4','\uC8FC\uBB38','\uD310\uB9E4','\uC2DC\uC7A5','\uB9C8\uCF13','\uC2DC\uCF1C','\uAC70\uB798','\uC0C1\uD488','\uC7AC\uACE0','\uC0AC\uB2E4','\uD314\uB2E4','\uC5BC\uB9C8','\uCC3E\uC544\uC918','\uCD94\uCC9C'],
   },
 ];
