@@ -10,7 +10,7 @@ export const CFG = {
   apiKey:      'sk-e4a6f005aecf43d4aa60e77bb71de14c',
   geminiKey:   'AIzaSyDiytKUg_0MJVBM3gFYzTms7mO6Y2mhLT4',
   kakaoKey:    '66648ca49f126d8752b33d542789ac56',
-  endpoint:    'https://gopang-proxy.tensor-city.workers.dev/deepseek',
+  endpoint:    'https://hondi-proxy.tensor-city.workers.dev/deepseek',
   model:       'deepseek-chat',
   system:      '',
   system_base: null,
