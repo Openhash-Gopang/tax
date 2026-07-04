@@ -631,8 +631,7 @@ function startGreeting() {
   // 문장만 짧게 보여주고, 곧바로 인터뷰 스피너로 넘어간다.
   if (GWP_CTX && !_gwpSeedUsed) {
     _gwpSeedUsed = true;
-    appendBubble('user', `<i>(AI 비서로부터 전달됨)</i><br>${escHtml(GWP_CTX).replace(/
-/g,'<br>')}`);
+    appendBubble('user', `<i>(AI 비서로부터 전달됨)</i><br>${escHtml(GWP_CTX).replace(/\n/g,'<br>')}`);
     appendBubble('ai', `저는 K-Tax입니다. 다만 저는 세무사 자격이 없어 실제 신고서 작성·제출을 대신할 수 없고, 안내하는 세액은 어디까지나 추정치입니다 — 정확한 계산과 정식 신고는 반드시 관할 세무서 또는 자격 있는 세무사와 상담해 주셔야 합니다.`);
     _markGreeted();
     conversationState.phase = 'interviewing';
