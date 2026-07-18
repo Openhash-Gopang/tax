@@ -427,12 +427,42 @@ const DIST_LABELS = Object.keys(DISTRICTS).reduce((acc,city)=>{
 // 엔티티 유형 레이블
 const ET = {person:'개인', org:'기관', thing:'사물'};
 
-// VAT율·소득세율 (간이 계산)
+// 2026-07-18 수정: 이전엔 소득 규모와 무관하게 항상 최저세율(6%)만
+// 적용하는 "간이 계산"이었다(desktop.html이 광고하는 "8단계 누진세율
+// 자동 계산"과 실제 코드가 전혀 다른 상태 — 세액이 법정 최고세율(45%)
+// 대비 대폭 과소 산출되고 있었음). 실제 8단계 누진세율표로 교체하고,
+// 그동안 빠져있던 지방소득세(소득세의 10%)도 추가한다.
+//
+// 출처: 소득세법 제55조, 2023년 개정 과세표준 구간(1,400만/5,000만
+// 구간 조정) — 2026년 현재도 동일 구간 적용 중. 세율×과세표준-누진공제
+// 방식이며, 아래 표는 국세청 공표 누진공제액과 일치함(경계값에서
+// 연속성 검증 완료 — 예: 8,800만원 기준 24%·35% 두 계산식이 정확히
+// 같은 세액을 산출함).
+const INCOME_TAX_BRACKETS = [
+  { upTo:  14_000_000, rate: 0.06, deduction:         0 },
+  { upTo:  50_000_000, rate: 0.15, deduction: 1_260_000 },
+  { upTo:  88_000_000, rate: 0.24, deduction: 5_760_000 },
+  { upTo: 150_000_000, rate: 0.35, deduction: 15_440_000 },
+  { upTo: 300_000_000, rate: 0.38, deduction: 19_940_000 },
+  { upTo: 500_000_000, rate: 0.40, deduction: 25_940_000 },
+  { upTo: 1_000_000_000, rate: 0.42, deduction: 35_940_000 },
+  { upTo: Infinity,     rate: 0.45, deduction: 65_940_000 },
+];
+
+function calcProgressiveIncomeTax(income) {
+  const taxable = Math.max(0, income);
+  const bracket = INCOME_TAX_BRACKETS.find(b => taxable <= b.upTo);
+  const tax = Math.max(0, taxable * bracket.rate - bracket.deduction);
+  return Math.round(tax * 100) / 100;
+}
+
+// VAT율(10%, 매출 기준) + 종합소득세(8단계 누진) + 지방소득세(소득세의 10%)
 function calcTax(rev, opex) {
-  const income = Math.max(0, rev - opex);
-  const vat = Math.round(rev * 0.10 * 100)/100;      // 부가세 10%
-  const incomeTax = Math.round(income * 0.06 * 100)/100; // 소득세 6% (최저세율)
-  return {vat, incomeTax, total: vat+incomeTax};
+  const income     = Math.max(0, rev - opex);
+  const vat        = Math.round(rev * 0.10 * 100) / 100;
+  const incomeTax  = calcProgressiveIncomeTax(income);
+  const localTax   = Math.round(incomeTax * 0.10 * 100) / 100; // 지방소득세
+  return { vat, incomeTax, localTax, total: vat + incomeTax + localTax };
 }
 
 // 납부 상태 (현금 잔액 기준 시뮬)
@@ -569,6 +599,7 @@ function renderTaxtype() {
   const total   = _allRows.length;
   const vatSum  = _allRows.reduce((s,r) => s+r.vat, 0);
   const itSum   = _allRows.reduce((s,r) => s+r.incomeTax, 0);
+  const localSum= _allRows.reduce((s,r) => s+r.localTax, 0);
   const taxSum  = _allRows.reduce((s,r) => s+r.taxTotal, 0);
   const revSum  = _allRows.reduce((s,r) => s+r.rev, 0);
   const opexSum = _allRows.reduce((s,r) => s+r.opex, 0);
@@ -595,8 +626,9 @@ function renderTaxtype() {
     ]) +
     card('세목별 징수액', [
       ['부가가치세 (VAT)', '₮' + fmt(vatSum), '매출액 × 10%'],
-      ['종합소득세', '₮' + fmt(itSum), '소득 × 6% (최저세율)'],
-      ['세금 합계', '₮' + fmt(taxSum), 'VAT + 소득세'],
+      ['종합소득세', '₮' + fmt(itSum), '과세표준 × 누진세율(6~45%) - 누진공제'],
+      ['지방소득세', '₮' + fmt(localSum), '종합소득세 × 10%'],
+      ['세금 합계', '₮' + fmt(taxSum), 'VAT + 소득세 + 지방소득세'],
       ['납세율', revSum > 0 ? (taxSum/revSum*100).toFixed(1) + '%' : '—', '세금÷매출'],
     ]) +
     card('유형별 분포', [
@@ -717,6 +749,21 @@ async function loadLedger() {
 
 async function loadData(){
   const tbody=document.getElementById('tax-tbody');
+
+  // 2026-07-18 수정: 이전엔 인증 여부와 무관하게 드롭다운만 건드리면
+  // 전체 200명의 이름·주소·매출·세금 데이터가 anon key로 그대로
+  // 조회됐다(_onGopangAuth는 PDV 기록·UI 배지 표시만 하고 접근 자체를
+  // 막지 않았음). 최소한 로그인은 반드시 거치도록 막는다.
+  // ⚠️ 이 게이트는 "비로그인 차단"만 한다 — 실제 세무 담당자만 걸러내는
+  // 진짜 관리자 권한 체계는 이 SSO에 아직 없다(Worker가 'user' role만
+  // 지원, 'admin' 미지원 — 923번 줄 주석 참고). 정식 관리자 역할 체계는
+  // 별도로 설계해야 하고, 그 전까지는 "로그인은 했지만 세무 담당자인지는
+  // 확인 안 됨" 상태라는 걸 인지하고 있어야 한다.
+  if (!_dashGuid) {
+    tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--txt3)">로그인이 필요합니다. 상단에서 고팡 계정으로 인증해 주세요.</td></tr>';
+    return;
+  }
+
   tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--txt3)">로딩 중…</td></tr>';
 
   try {
@@ -744,7 +791,7 @@ async function loadData(){
       return {
         guid: p.guid, name: p.name||'—', entity_type: p.entity_type||'person',
         address: addr, district, rev, opex, cash,
-        vat: tax.vat, incomeTax: tax.incomeTax, taxTotal: tax.total,
+        vat: tax.vat, incomeTax: tax.incomeTax, localTax: tax.localTax, taxTotal: tax.total,
         status, extra: p.extra||{}
       };
     });
@@ -842,7 +889,8 @@ function openPanel(r){
     <div class="dp-section">
       <div class="dp-section-title">2Q 세금 계산</div>
       <div class="dp-row"><span class="dp-key">부가세 (10%)</span><span class="dp-val">₮${fmt(r.vat)}</span></div>
-      <div class="dp-row"><span class="dp-key">소득세 (6%)</span><span class="dp-val">₮${fmt(r.incomeTax)}</span></div>
+      <div class="dp-row"><span class="dp-key">종합소득세 (누진세율)</span><span class="dp-val">₮${fmt(r.incomeTax)}</span></div>
+      <div class="dp-row"><span class="dp-key">지방소득세 (소득세의 10%)</span><span class="dp-val">₮${fmt(r.localTax)}</span></div>
       <div class="dp-row"><span class="dp-key">세금 합계</span><span class="dp-val" style="font-weight:700;color:var(--pri)">₮${fmt(r.taxTotal)}</span></div>
       <div class="dp-row"><span class="dp-key">납부 상태</span><span class="dp-val ${r.status==='납부가능'?'ok':r.status==='미납'?'danger':'warn'}">${r.status}</span></div>
     </div>
@@ -857,8 +905,8 @@ function closePanel(){document.getElementById('dp').classList.remove('open')}
 
 function exportCSV(){
   const rows=_allRows;
-  const header=['GUID','이름','주소','유형','매출','판관비','부가세','소득세','세금합계','납부상태','현금잔액'];
-  const lines=[header.join(','),...rows.map(r=>[r.guid,r.name,r.address,r.entity_type,r.rev,r.opex,r.vat,r.incomeTax,r.taxTotal,r.status,r.cash].join(','))];
+  const header=['GUID','이름','주소','유형','매출','판관비','부가세','소득세','지방소득세','세금합계','납부상태','현금잔액'];
+  const lines=[header.join(','),...rows.map(r=>[r.guid,r.name,r.address,r.entity_type,r.rev,r.opex,r.vat,r.incomeTax,r.localTax,r.taxTotal,r.status,r.cash].join(','))];
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,\uFEFF'+lines.join('\n');
   a.download='gopang_tax_2026Q2.csv';
