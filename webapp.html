@@ -281,49 +281,25 @@ let _gwpSeedUsed = false;
 const _sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2));
 const _sessionStartedAt = new Date().toISOString();
 
-// ── 대화 종료 시 이중 보고: (a) 자기 PDV에 원문 시간순 저장, (b) 나만의
-// AI 비서에게 6하원칙 보고(GWP_DONE). GWP 경유(gwp=1)일 때만 수행 —
-// 직접 접속 시엔 opener가 없으므로 보고 대상 자체가 없다.
+// ── 대화 종료 시 보고: 공용 모듈(gwp-report-client.js)로 통합
+// (2026-07-20 — SSOT 마이그레이션. 기존엔 이 41줄을 저장소마다 복붙해서
+// 썼는데, 이제 gopang의 단일 소스를 그대로 쓴다. 부수 효과로 §7(기관측
+// PDV, owner_pdv)도 이 시점부터 자동으로 함께 기록된다 — reportGwpSessionEnd()
+// 내부에 recordOwnerPDV()가 이미 연결돼 있어서, 이 저장소 쪽은 아무것도
+// 더 안 해도 된다.)
 async function _reportSessionEnd(resultText, summaryLine) {
-  if (!GWP_MODE) return;
-  const now = new Date().toISOString();
-  const guid = _govGuid();
-  const transcript = conversationState.messages
-    .filter(m => m.role === 'user' || m.role === 'assistant')
-    .map(m => `[${m.role === 'user' ? '사용자' : 'AI'}] ${m.content}`)
-    .concat([`[AI] ${resultText}`])
-    .join('\n\n');
-  const whenObj  = { period_start: _sessionStartedAt, period_end: now };
-  const whatText = summaryLine || `${AGENCY_ID} 상담 완료`;
-
-  // (a) 서브시스템 자기 PDV — 대화 원문 시간순 저장
-  try {
-    await fetch(PROXY + '/pdv/report', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ report: {
-        svc: AGENCY_ID, type: 'conversation_transcript', session_id: _sessionId,
-        who: { ipv6: guid, role: 'user' },
-        when: whenObj,
-        where: { svc_url: location.href },
-        what: { summary: transcript },
-        how:  { method: 'gov_relay_conversation' },
-        why:  { goal: whatText },
-      }})
-    });
-  } catch(e) { console.warn('[PDV] 자기 기록 실패(무시):', e.message); }
-
-  // (b) 나만의 AI 비서에게 6하원칙 보고 — engine.js가 사용자 PDV에 기록
-  if (window.opener) {
-    try {
-      window.opener.postMessage({
-        type: 'GWP_DONE',
-        summary: whatText,
-        session_id: _sessionId,
-        reporter_svc: AGENCY_ID,
-        pdvData: { who: guid, when: whenObj, where: location.href, what: whatText, how: 'gwp', why: whatText },
-      }, GWP_ORIGIN || '*');
-    } catch(e) { console.warn('[GWP_DONE] 보고 실패(무시):', e.message); }
-  }
+  const { reportGwpSessionEnd } = await import('https://hondi.net/src/gopang/gwp/gwp-report-client.js');
+  return reportGwpSessionEnd({
+    agencyId: AGENCY_ID,
+    guid: _govGuid(),
+    messages: conversationState.messages,
+    resultText,
+    summaryLine,
+    gwpMode: GWP_MODE,
+    gwpOrigin: GWP_ORIGIN,
+    sessionId: _sessionId,
+    sessionStartedAt: _sessionStartedAt,
+  }).catch(e => console.warn('[gwp-report-client] 보고 실패(무시):', e.message));
 }
 
 // ══════════════════════════════════════════════════════════════
