@@ -3,13 +3,13 @@
 // ⚠️  .gitignore에 추가하여 API 키 노출 방지
 // ══════════════════════════════════════════════════════════════════
 
-export const SUPABASE_URL = 'https://ebbecjfrwaswbdybbgiu.supabase.co';
-export const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViYmVjamZyd2Fzd2JkeWJiZ2l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjE5ODQsImV4cCI6MjA5NTEzNzk4NH0.H2ahQKtWdSke04Pdi3hDY86pdTx7UUKPUpQMlS_zciA';
+export const SUPABASE_URL = '' /* -2026-08-12 secret removed, see README_SECRETS_INCIDENT.md */;
+export const SUPABASE_KEY = '' /* -2026-08-12 secret removed, rotate + migrate to PocketBase, see README_SECRETS_INCIDENT.md */;
 
 export const CFG = {
-  apiKey:      'sk-e4a6f005aecf43d4aa60e77bb71de14c',
-  geminiKey:   'AIzaSyDiytKUg_0MJVBM3gFYzTms7mO6Y2mhLT4',
-  kakaoKey:    '66648ca49f126d8752b33d542789ac56',
+  apiKey:      '' /* -2026-08-12 secret removed, rotate in DeepSeek console */,
+  geminiKey:   '' /* -2026-08-12 secret removed, rotate in Google Cloud Console */,
+  kakaoKey:    '' /* -2026-08-12 secret removed (newly found, outside original incident scope), rotate in Kakao Developers console */,
   endpoint:    'https://hondi-proxy.tensor-city.workers.dev/deepseek',
   model:       'deepseek-chat',
   system:      '',
