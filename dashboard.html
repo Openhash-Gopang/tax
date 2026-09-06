@@ -1049,15 +1049,12 @@ window.sendDashPDV = sendDashPDV;
 
 <!-- 2026-07-18 신설 — /biz/verify-admin 서명 인증에 필요 (HONDI_GAP_REMEDIATION §2.3) -->
 <script src="https://cdn.jsdelivr.net/gh/Openhash-Gopang/gopang@main/gopang-wallet.js"></script>
-<!-- 고팡 SSO 인증 — 이 한 줄이 전부 -->
-<script type="module"
-  src="https://hondi.net/auth/subsystem-auth.js">
-</script>
-<!-- K-서비스 공용 전화번호 인증 모듈(2026-09-06, 잠정 부착 — 주피터 지시,
-     전수 재점검으로 발견) — plan.hondi.net 등에서 이미 로그인했으면
-     .hondi.net 쿠키로 여기서도 자동 로그인된다. 기존 고팡 지갑 SSO
-     (subsystem-auth.js, 크로스 도메인 릴레이 버그로 고장난 상태)는
-     그대로 두고 공용 모듈만 부착했다. -->
+<!-- K-서비스 공용 전화번호 인증 모듈(2026-09-06 부착) — plan.hondi.net 등에서
+     이미 로그인했으면 .hondi.net 쿠키로 여기서도 자동 로그인된다.
+     2026-09-07: 로그인용 구 고팡 지갑 SSO(subsystem-auth.js, 크로스 도메인
+     릴레이 버그로 고장난 상태였음)는 폐기 — 로그인은 이 공용 모듈 단독
+     체제로 전환됨. (위 gopang-wallet.js는 로그인이 아니라 verifyTaxAdmin()의
+     /biz/verify-admin 서명 검증에 별도로 쓰이므로 그대로 둔다.) -->
 <script>
 window.K_AUTH_CONFIG = { serviceLabel: '고팡 세무' };
 </script>
