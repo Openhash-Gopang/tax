@@ -79,3 +79,8 @@ html:has(:root[data-theme="d"]), :root[data-theme="d"] { background: #eef3fb; }
 @media (prefers-reduced-transparency: reduce) {
   :root[data-theme="d"] .bar, :root[data-theme="d"] .rail, :root[data-theme="d"] .tab, :root[data-theme="d"] .chat { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
+
+/* D 데스크톱: 흰색 타이틀 바를 없애고, 제안·설정·K-Tax·사용자 배지를 격자 바탕 위 오른쪽 위에 그대로 둔다 */
+@media (min-width: 900px) {
+  :root[data-theme="d"] .bar { position: static; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border: 0; }
+}
