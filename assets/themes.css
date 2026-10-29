@@ -84,3 +84,9 @@ html:has(:root[data-theme="d"]), :root[data-theme="d"] { background: #eef3fb; }
 @media (min-width: 900px) {
   :root[data-theme="d"] .bar { position: static; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border: 0; }
 }
+
+/* D 데스크톱: 사용법·사이트의 특징은 오른쪽 탭 대신 왼쪽 메뉴 항목으로 연다 */
+:root[data-theme="d"] .rl.rp { width: 100%; padding: 0; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+@media (min-width: 900px) {
+  :root[data-theme="d"] .tab { display: none; }
+}
