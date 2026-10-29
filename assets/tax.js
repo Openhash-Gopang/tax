@@ -7,7 +7,7 @@
   var HONDI = 'https://hondi.net';
   var LABEL = '세무 & 회계';
   var KEY = 'navitax_';
-  var PERSONA = { tax: 'tax-accountant', cpa: 'cpa' }; // hondi 저장소의 실제 전문가 ID로 확정 필요
+  var PERSONA = { tax: 'tax-accounting', cpa: 'tax-accounting' }; // hondi 전문가 ID: 세무사·회계사 통합 SP(SP_tax-accounting-assistant)
   var ENGINE_L = PERSONA.tax;
   var ISSUE_URL = 'https://www.gov.kr';
   var LINKS = {
@@ -90,13 +90,22 @@
     return /(^|\n)#\s+\S/.test(rest) ? rest : null;
   }
 
+  // 서식 맨 앞의 YAML 머리말(--- … ---)은 화면에 보이지 않게 한다.
+  function stripFront(md) {
+    return String(md || '').replace(/^\s*---[ \t]*\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/, '');
+  }
+  // 자격자가 채우는 자리표시자: [세무사 기재: …] [회계사 기재: …] [회계사 판단] [항목: 세무사 직접 기재] 등
+  var NOTE_RE = /\[(?:(?:세무사|회계사) (?:기재|직접 기재|직접 확인[^\]]*)(?::\s*[^\]]+?)?|회계사 판단(?::\s*[^\]]+?)?|[^\[\]:]+:\s*(?:세무사|회계사) 직접 기재)\s*\]/g;
+
   function renderMd(md, o) {
     o = o || {};
+    md = stripFront(md);
     var lines = String(md || '').split(/\r?\n/), out = [], i = 0, cnt = {};
     var titleSkipped = !o.skipTitle, inList = false;
     function inl(s) {
       s = esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
       var re = /\[확인 필요:\s*([^\]]+?)\s*\]/g;
+      s = note(s);
       if (o.inputs) {
         return s.replace(re, function (_, l) {
           cnt[l] = (cnt[l] || 0) + 1;
@@ -105,6 +114,7 @@
       }
       return s.replace(re, '<span class="blank">($1)</span>');
     }
+    function note(h) { return h.replace(NOTE_RE, function (m) { return '<span class="blank">' + m + '</span>'; }); }
     function closeList() { if (inList) { out.push('</ul>'); inList = false; } }
     while (i < lines.length) {
       var L = lines[i], m;
@@ -160,7 +170,12 @@
     var lines = String(md || '').split(/\r?\n/), out = [], on = false, m;
     for (var i = 0; i < lines.length; i++) {
       if (/^#{1,4}\s+/.test(lines[i])) { on = /첨부/.test(lines[i]); continue; }
-      if (on && (m = /^\s*(?:[-*]|\d+\.)\s+(.+)$/.exec(lines[i]))) out.push(m[1].replace(/\*\*/g, '').trim());
+      if (on && (m = /^\s*(?:[-*]|\d+\.)\s+(.+)$/.exec(lines[i]))) { out.push(m[1].replace(/\*\*/g, '').trim()); continue; }
+      if (on && /^\s*\|/.test(lines[i])) {
+        var c = lines[i].trim().replace(/^\||\|$/g, '').split('|').map(function (x) { return x.replace(/\*\*/g, '').trim(); });
+        if (c.length < 2 || c.every(function (x) { return /^:?-{2,}:?$/.test(x); }) || c[0] === '순번' || !c[1]) continue;
+        out.push(c[1] + (c[3] ? ' (' + c[3] + ')' : ''));
+      }
     }
     return out;
   }
@@ -203,7 +218,7 @@
   var api = {
     HONDI: HONDI, KEY: KEY, SIM_CLIENT: SIM_CLIENT, NOT_SELF_RE: NOT_SELF_RE, SENSITIVE_RE: SENSITIVE_RE, VERDICTS: VERDICTS,
     esc: esc, norm: norm, pdvKind: pdvKind, search: search, extractDraft: extractDraft, partialDraft: partialDraft,
-    renderMd: renderMd, fillMd: fillMd, attachmentsOf: attachmentsOf, parseReview: parseReview, kstLabel: kstLabel,
+    stripFront: stripFront, renderMd: renderMd, fillMd: fillMd, attachmentsOf: attachmentsOf, parseReview: parseReview, kstLabel: kstLabel,
     draftStartMessage: draftStartMessage, reviewMessage: reviewMessage
   };
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; }
@@ -308,7 +323,7 @@
         frameReady = false; framePid = pid;
         frame = document.createElement('iframe');
         frame.title = 'AI 전문가 대화';
-        frame.src = HONDI + '/pages/expert-chat.html?persona=' + encodeURIComponent(pid) + '&embed=1';
+        frame.src = HONDI + '/pages/expert-chat.html?persona=' + encodeURIComponent(pid) + '&embed=1&label=' + encodeURIComponent(LABEL);
         $('#chat').appendChild(frame);
       });
     }
