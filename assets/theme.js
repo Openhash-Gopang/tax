@@ -3,7 +3,7 @@
 (function () {
   var DEFAULT = 'd';
   var OK = ['a', 'b', 'c', 'd', 'e'];
-  var KEY = 'navitax_theme';
+  var KEY = 'navitax_theme_v2'; // v2: 예전에 저장된 다른 디자인 선택을 비우고 모두 D 로 시작
   var t = null;
   try {
     var m = /[?&]theme=([a-e])(?:&|#|$)/i.exec(location.search);
