@@ -1,95 +1,81 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>고팡 세무</title>
-  <link rel="manifest" href="/manifest.json"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="고팡 세무"/>
-  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
-  <meta name="theme-color" content="#0057A8"/>
-  <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="description" content="고팡 세무 — AI 납세·세무 서비스"/>
-  <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
-  <style>
-    :root { --bg:#0f172a; --pri:#3ecf8e; --font:'Noto Sans KR',-apple-system,sans-serif; }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%;background:var(--bg);font-family:var(--font);display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
-    .splash{display:flex;flex-direction:column;align-items:center;gap:20px;opacity:1;transition:opacity .3s}
-    .splash-logo{width:72px;height:72px;background:var(--pri);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#0f172a;box-shadow:0 0 40px rgba(62,207,142,.35)}
-    .splash-title{font-size:20px;font-weight:700;color:#fff;letter-spacing:-.3px}
-    .splash-sub{font-size:13px;color:rgba(255,255,255,.45);margin-top:-12px}
-    .splash-spinner{width:24px;height:24px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--pri);border-radius:50%;animation:spin .7s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .choose{display:none;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:32px 24px}
-    .choose h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
-    .choose p{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:8px;line-height:1.6}
-    .choose-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-    .choose-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 28px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);cursor:pointer;color:#fff;font-family:var(--font);transition:background .15s,border-color .15s;min-width:140px}
-    .choose-btn:hover{background:rgba(62,207,142,.12);border-color:var(--pri)}
-    .choose-btn-icon{font-size:32px}
-    .choose-btn-label{font-size:14px;font-weight:600}
-    .choose-btn-sub{font-size:11px;color:rgba(255,255,255,.45)}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>세무 & 회계 — 나비웹</title>
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/tax.css">
+<link rel="stylesheet" href="assets/themes.css">
 </head>
 <body>
-<div class="splash" id="splash">
-  <div class="splash-logo">₮</div>
-  <div>
-    <div class="splash-title">고팡 세무</div>
-    <div class="splash-sub">AI 납세 · 세무 서비스</div>
-  </div>
-  <div class="splash-spinner"></div>
-</div>
-<div class="choose" id="choose">
-  <div class="splash-logo">₮</div>
-  <h2>환경을 선택하세요</h2>
-  <p>화면 크기를 자동으로 감지하지 못했습니다.<br>사용 환경에 맞는 버전을 선택해 주세요.</p>
-  <div class="choose-btns">
-    <button class="choose-btn" onclick="go('desktop.html')">
-      <span class="choose-btn-icon">🖥️</span>
-      <span class="choose-btn-label">PC / 관리자</span>
-      <span class="choose-btn-sub">시스템 소개 · 대시보드</span>
-    </button>
-    <button class="choose-btn" onclick="go('webapp.html')">
-      <span class="choose-btn-icon">📱</span>
-      <span class="choose-btn-label">모바일</span>
-      <span class="choose-btn-sub">개인 납세 앱</span>
-    </button>
-  </div>
-</div>
+<div id="chrome"></div>
+
+<main class="home" id="main">
+  <p class="count" id="count"></p>
+  <form class="ask" id="askForm" role="search">
+    <button type="button" class="ic" id="attach" aria-label="파일 첨부"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    <input type="text" id="q" autocomplete="off" aria-label="서류 이름" placeholder="서류 이름">
+    <button type="button" class="ic" id="mic" aria-label="음성 입력"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
+    <button type="submit" class="ic ok" id="go" aria-label="입력 완료"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></button>
+    <input type="file" id="file" hidden>
+  </form>
+  <p class="attached" id="attached" role="status"></p>
+
+  <article class="doc" id="doc" hidden>
+    <div class="docbar"><button type="button" class="btn sec" data-rv>제출 결과 예상</button></div>
+    <div id="review"></div>
+    <h2 class="dtitle" id="dtitle"></h2>
+    <p class="dlaw" id="dlaw"></p>
+    <div class="chips" id="chips"></div>
+    <div class="docbody" id="body"></div>
+    <p class="status" id="status" role="status"></p>
+    <p class="err" id="err"></p>
+    <div class="acts">
+      <button type="button" class="btn sec" data-rv>제출 결과 예상</button>
+      <button type="button" class="btn" id="dl">내려받기</button>
+      <button type="button" class="btn sec" id="cp">복사</button>
+      <button type="button" class="btn sec" id="ed">이어서 고치기</button>
+    </div>
+  </article>
+</main>
+
+<button type="button" class="tab t1" data-panel="p-how">사용법</button>
+<button type="button" class="tab t2" data-panel="p-feat">사이트의 특징</button>
+
+<aside class="panel" id="p-how" aria-label="사용법">
+  <header><h2>사용법</h2><button type="button" class="ic x" aria-label="닫기"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <ol>
+    <li><b>서류 이름 입력</b>작성할 세무·회계 서류의 이름을 입력 칸에 칩니다. 글자를 치는 즉시 서식이 펼쳐집니다.</li>
+    <li><b>서류 선택</b>비슷한 서류가 있으면 서식 위의 버튼에서 고릅니다.</li>
+    <li><b>엔터 키로 작성 시작</b>엔터 키를 누르면 같은 화면에서 AI가 초안을 위에서부터 작성합니다.</li>
+    <li><b>의뢰인 정보 자동 기입</b>성명·주소·전화번호·이메일은 PDV에서 가져와 파란 칸(PDV 표시)에 채웁니다. 고칠 수 있습니다.</li>
+    <li><b>빈 칸 입력과 저장</b>남은 빈 칸을 채우면 내 서류 목록에 자동 저장됩니다. 서류 위·아래의 “제출 결과 예상”으로 접수 결과를 미리 가늠할 수 있습니다.</li>
+  </ol>
+</aside>
+
+<aside class="panel" id="p-feat" aria-label="사이트의 특징">
+  <header><h2>사이트의 특징</h2><button type="button" class="ic x" aria-label="닫기"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <ol>
+    <li><b>세무사·공인회계사 서류를 한 곳에서</b>신고서·조정계산서·감사 관련 서류 등을 한 화면에서 작성하고, 작성한 서류의 제출 결과(승인·보정·수정)를 법적 근거와 함께 미리 가늠합니다.</li>
+    <li><b>데이터의 해외 유출 없음</b>국산 LLM과 국내 서버를 사용하므로 데이터가 해외로 나가지 않습니다.</li>
+    <li><b>기밀 누출 우려 없음</b>모든 데이터는 사용자의 데이터 금고에 저장하고 서버에는 저장하지 않습니다.</li>
+    <li><b>의뢰인 정보 자동 기입</b>인적사항은 PDV에서 가져오므로 매번 묻지 않습니다.</li>
+    <li><b>페이지 이동 없이</b>입력, 작성, 검토가 모두 한 화면에서 이루어집니다.</li>
+  </ol>
+</aside>
+
+<footer class="foot">
+  <a href="https://hondi.net/" target="_blank" rel="noopener">나비웹</a>
+  <a href="https://hondi.net/pages/suggest.html" target="_blank" rel="noopener">제안</a>
+  <a href="https://hondi.net/desktop.html" target="_blank" rel="noopener">나비 플랫폼</a>
+</footer>
+
+<script src="assets/tax.js"></script>
 <script>
-  function detectDevice() {
-    const w         = window.innerWidth  || screen.width;
-    const hasCoarse = window.matchMedia('(pointer: coarse)').matches;
-    const hasFine   = window.matchMedia('(pointer: fine)').matches;
-    const isNarrow  = w <= 768;
-    if (w <= 430)            return 'mobile';
-    if (!isNarrow && hasFine) return 'desktop';
-    if (isNarrow && hasCoarse) return 'mobile';
-    if (hasFine)   return 'desktop';
-    if (hasCoarse) return 'mobile';
-    return null;
-  }
-  function go(url) {
-    const params = new URLSearchParams(location.search);
-    const hash   = location.hash;
-    const qs     = params.toString() ? '?' + params.toString() : '';
-    location.replace(url + qs + hash);
-  }
-  function route() {
-    const device = detectDevice();
-    if      (device === 'desktop') go('desktop.html');
-    else if (device === 'mobile')  go('webapp.html');
-    else {
-      document.getElementById('splash').style.display = 'none';
-      document.getElementById('choose').style.display = 'flex';
-    }
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', route);
-  else route();
+  NaviTax.chrome('home', { chat: true });
+  NaviTax.initPanels();
+  NaviTax.initHome();
 </script>
 </body>
 </html>
