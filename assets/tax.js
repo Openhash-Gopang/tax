@@ -306,7 +306,11 @@
     });
     try {
       var want = new URLSearchParams(location.search).get('panel');
-      if (want && document.getElementById(want)) toggle(want);
+      if (want && document.getElementById(want)) {
+        toggle(want);
+        /* 다른 페이지에서 넘어온 경우에만 열고, 주소에서 panel 값을 지워 새로 고침·주소 자동완성으로 다시 열리지 않게 한다 */
+        if (history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
+      }
     } catch (e) {}
     $$('.panel .x').forEach(function (b) { b.addEventListener('click', closeAll); });
     scrim.addEventListener('click', closeAll);
@@ -325,7 +329,7 @@
     var chipsEl = $('#chips'), titleEl = $('#dtitle'), lawEl = $('#dlaw'), reviewEl = $('#review');
     var S = { cur: null, locked: false, job: 0, mode: '', md: '', vals: {}, pdv: {}, id: null, stage: '', nudged: false,
       partial: '', lastDraw: 0, drawT: null, exact: null, tmo: null, prevT: null, saveT: null, attach: '', acClient: null };
-    var frame = null, framePid = null, frameReady = false, waiters = [];
+    var frame = null, framePid = null, frameReady = false, waiters = [], noteT = null;
     var acMode = false;
     try { acMode = new URLSearchParams(location.search).get('ac') === '1' && !!window.opener; } catch (e) {}
 
@@ -343,8 +347,23 @@
         frame.title = 'AI 전문가 대화';
         frame.src = HONDI + '/pages/expert-chat.html?persona=' + encodeURIComponent(pid) + '&embed=1&label=' + encodeURIComponent(LABEL);
         $('#chat').appendChild(frame);
+        showNote('대화를 불러오는 중…');
+        clearTimeout(noteT);
+        noteT = setTimeout(function () {
+          if (!frameReady) showNote('대화 화면을 불러오지 못했습니다. 페이지를 새로 고친 뒤 다시 열어 주세요.');
+        }, 15000);
       });
     }
+    function showNote(t) {
+      var n = $('#chatNote');
+      if (!n) { n = document.createElement('p'); n.id = 'chatNote'; n.className = 'chat-note'; n.setAttribute('role', 'status'); $('#chat').appendChild(n); }
+      n.textContent = t; n.hidden = !t;
+    }
+    /* 대화 버튼으로 열 때도 대화 틀을 바로 만든다(서류를 시작하기 전에 열어도 빈 칸이 되지 않게) */
+    var fabEl = $('.fab');
+    if (fabEl) fabEl.addEventListener('click', function () {
+      if ($('#chat').classList.contains('open') && !frame) ensureFrame((S.cur && S.cur.pid) || ENGINE_L);
+    });
     function post(text) { frame.contentWindow.postMessage({ type: 'expert-embed-send', text: text }, HONDI); }
 
     window.addEventListener('message', function (e) {
@@ -352,7 +371,7 @@
       var d = e.data || {};
       if (d.type === 'GWP_PDV_RESPONSE' && acMode) { S.acClient = d.data || null; applyPdv(); return; }
       if (!frame || e.source !== frame.contentWindow) return;
-      if (d.type === 'expert-embed-ready') { frameReady = true; var w = waiters; waiters = []; w.forEach(function (f) { f(); }); }
+      if (d.type === 'expert-embed-ready') { frameReady = true; clearTimeout(noteT); showNote(''); var w = waiters; waiters = []; w.forEach(function (f) { f(); }); }
       else if (d.type === 'expert-embed-partial') onPartial(String(d.text || ''));
       else if (d.type === 'expert-embed-reply') onReply(String(d.text || ''));
     });
