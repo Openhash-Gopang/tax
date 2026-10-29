@@ -25,11 +25,12 @@
 :root[data-theme="c"] .bar { border-bottom: 0; }
 
 /* D 워크스페이스(기본): 왼쪽 아이콘 레일, 올리면 옆으로 펼쳐짐 */
-:root[data-theme="d"] body { padding-left: 72px; }
-:root[data-theme="d"] .rail { display: flex; flex-direction: column; gap: 6px; position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; width: 72px; padding: 12px; background: var(--bg); border-right: 1px solid var(--line); overflow: hidden; transition: width .2s ease, box-shadow .2s ease; }
-:root[data-theme="d"] .rail:hover, :root[data-theme="d"] .rail:focus-within { width: 224px; box-shadow: 8px 0 24px rgba(0, 32, 96, .12); }
+:root[data-theme="d"] body { padding-left: 72px; background: var(--soft); }
+:root[data-theme="d"] .rail { display: flex; flex-direction: column; gap: 6px; position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; width: 72px; padding: 12px; background: var(--bg); border-right: 0; box-shadow: var(--e2); overflow: hidden; transition: width .2s ease, box-shadow .2s ease; }
+:root[data-theme="d"] .rail:hover, :root[data-theme="d"] .rail:focus-within { width: 224px; box-shadow: var(--e4); }
 :root[data-theme="d"] .rl { display: flex; align-items: center; gap: 14px; border-radius: 14px; color: var(--navy); text-decoration: none; white-space: nowrap; }
 :root[data-theme="d"] .rl:hover { background: var(--tint); }
+:root[data-theme="d"] .rl[aria-current="page"] .ri { box-shadow: var(--e1); }
 :root[data-theme="d"] .rl[aria-current="page"] { background: var(--tint); }
 :root[data-theme="d"] .ri { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 14px; overflow: hidden; }
 :root[data-theme="d"] .ri img { width: 48px; height: 48px; object-fit: cover; border-radius: 14px; display: block; }
