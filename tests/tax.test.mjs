@@ -70,3 +70,21 @@ test('docs.json 형식', () => {
   }
   assert.equal(new Set(docs.map((d) => d.t)).size, docs.length);
 });
+
+test('통합 SP 출력 호환: 머리말 제거·자격자 자리표시자·첨부 표', () => {
+  const md = ['---', 'doc_type: 감사계약서', 'status: DRAFT', '---', '', '# 감사계약서', '',
+    '## 2. 서류 본문 (제출용)', '| 항목 | 내용 |', '|---|---|', '| 성명 | [확인 필요: 성명] |', '| 감사의견 | [회계사 판단] |',
+    '| 번호 | [주민등록번호: 세무사 직접 기재] |', '', '## 3. 첨부서류 목록',
+    '| 순번 | 서류 | 발급·작성처 | 상태(확보/미확보/작성 필요) |', '|---|---|---|---|',
+    '| 1 | 재무제표 | 회사 | 확보 |', '| 2 | 위임장 | 회사 | 미확보 |'].join('\n');
+  assert.ok(!T.stripFront(md).includes('doc_type'));
+  const html = T.renderMd(md, { skipTitle: true, inputs: true });
+  assert.ok(!html.includes('DRAFT'));
+  assert.ok(html.includes('data-l="성명"'));
+  assert.ok(html.includes('<span class="blank">[회계사 판단]</span>'));
+  assert.ok(html.includes('<span class="blank">[주민등록번호: 세무사 직접 기재]</span>'));
+  assert.deepEqual(T.attachmentsOf(md), ['재무제표 (확보)', '위임장 (미확보)']);
+});
+test('문서 목록의 전문가 ID 는 통합 페르소나 하나', () => {
+  assert.ok(docs.every(d => d.pid === 'tax-accounting'));
+});

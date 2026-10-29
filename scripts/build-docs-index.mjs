@@ -6,8 +6,8 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const TAX = 'tax-accountant';
-const CPA = 'cpa';
+const TAX = 'tax-accounting';
+const CPA = 'tax-accounting';
 const HT = '국세청 홈택스';
 const WT = '위택스';
 const KI = '한국공인회계사회';
