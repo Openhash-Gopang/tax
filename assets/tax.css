@@ -108,10 +108,10 @@ main.home { flex: 1; width: 100%; max-width: 860px; margin: 0 auto; padding: 48p
 .foot a:hover { color: var(--navy); text-decoration: underline; }
 
 /* 오른쪽 탭과 슬라이드 패널 */
-.tab { position: fixed; right: 0; z-index: 30; writing-mode: vertical-rl; padding: 18px 10px; border: 1px solid var(--tint2); border-right: 0; border-radius: var(--r-m) 0 0 var(--r-m); background: var(--tint); color: var(--navy); font-weight: 700; letter-spacing: .08em; }
+.tab { position: fixed; right: 0; z-index: 30; writing-mode: vertical-rl; padding: 9px 5px; border: 1px solid var(--tint2); border-right: 0; border-radius: 8px 0 0 8px; background: var(--tint); color: var(--navy); font-weight: 700; letter-spacing: .08em; font-size: .6rem; }
 .tab:hover { background: var(--tint2); }
 .tab.t1 { top: 28%; }
-.tab.t2 { top: calc(28% + 124px); }
+.tab.t2 { top: calc(28% + 62px); }
 .scrim { position: fixed; inset: 0; z-index: 40; background: rgba(0, 32, 96, .28); opacity: 0; pointer-events: none; transition: opacity .2s; }
 .scrim.on { opacity: 1; pointer-events: auto; }
 .panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 50; width: min(440px, 92vw); padding: 24px 26px 40px; background: var(--bg); box-shadow: -8px 0 28px rgba(0, 32, 96, .18); overflow-y: auto; transform: translateX(105%); transition: transform .24s ease; visibility: hidden; }
@@ -164,3 +164,53 @@ main.wide h1 { margin: 0 0 18px; font-size: 1.6rem; color: var(--navy); }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ===== Material Design 3 — 입체감(엘리베이션), 상태 레이어, 형태 =====
+   청색 그림자 한 가지 색(--sh)으로 키 그림자 + 주변 그림자를 겹쳐 높이를 표현합니다. 색은 흰색·청색 계통 그대로입니다. */
+:root {
+  --sh: 0, 32, 96;
+  --e1: 0 1px 2px rgba(var(--sh), .30), 0 1px 3px 1px rgba(var(--sh), .15);
+  --e2: 0 1px 2px rgba(var(--sh), .30), 0 2px 6px 2px rgba(var(--sh), .15);
+  --e3: 0 1px 3px rgba(var(--sh), .30), 0 4px 8px 3px rgba(var(--sh), .15);
+  --e4: 0 2px 3px rgba(var(--sh), .30), 0 6px 10px 4px rgba(var(--sh), .15);
+  --e5: 0 4px 4px rgba(var(--sh), .30), 0 8px 12px 6px rgba(var(--sh), .15);
+  --ease: cubic-bezier(.2, 0, 0, 1);
+}
+html, body, button, input, select, textarea { font-family: var(--font); }
+body { font-synthesis: none; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
+.bar, .ask, .doc, .rbox, .btn, .chip, .card, .row, .tab, .panel, .chat, .fab, .ic, .rl, .ri, .fld {
+  transition: box-shadow .2s var(--ease), background-color .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+}
+.bar { border-bottom: 0; box-shadow: var(--e2); }
+.ask { border-color: transparent; box-shadow: var(--e2); }
+.ask:hover { box-shadow: var(--e3); }
+.ask:focus-within { outline: 0; border-color: transparent; box-shadow: var(--e3), 0 0 0 2px var(--primary); }
+.doc { border: 0; box-shadow: var(--e2); }
+.rbox { border: 0; box-shadow: var(--e1); }
+.btn { border-color: transparent; box-shadow: var(--e1); }
+.btn:hover { box-shadow: var(--e2); }
+.btn:active { box-shadow: none; transform: translateY(1px); }
+.btn.sec { border-color: var(--tint2); }
+.btn.sm, .btn.sm.line { box-shadow: var(--e1); }
+.chip { border-color: transparent; box-shadow: var(--e1); }
+.chip:hover { box-shadow: var(--e2); }
+.chip:active { box-shadow: none; transform: translateY(1px); }
+.ic.ok { box-shadow: var(--e1); }
+.ic.ok:hover { box-shadow: var(--e2); }
+.fld { border-color: transparent; border-bottom: 2px solid var(--primary); border-radius: 8px 8px 0 0; box-shadow: inset 0 1px 2px rgba(var(--sh), .12); }
+.fld:focus { outline: none; background: var(--tint2); box-shadow: inset 0 1px 2px rgba(var(--sh), .12), 0 2px 0 var(--primary); }
+.tab { border: 0; box-shadow: var(--e3); }
+.tab:hover { box-shadow: var(--e4); }
+.panel { box-shadow: var(--e5); border-radius: 16px 0 0 16px; }
+.fab { box-shadow: var(--e3); }
+.fab:hover { box-shadow: var(--e4); }
+.fab:active { box-shadow: var(--e1); transform: scale(.96); }
+.chat { border: 0; border-radius: 20px; box-shadow: var(--e5); }
+.card { border: 0; box-shadow: var(--e1); }
+.card:hover { box-shadow: var(--e3); }
+.card[aria-checked="true"] { box-shadow: var(--e2), inset 0 0 0 2px var(--primary); }
+.list .row { margin: 0 0 10px; padding: 14px 16px; border: 0; border-radius: var(--r-m); background: var(--bg); box-shadow: var(--e1); }
+.list .row:hover { box-shadow: var(--e2); }
+.foot { border-top: 0; box-shadow: 0 -1px 3px rgba(var(--sh), .12); }
+.tools a:hover, .bnav a:hover, .ic:hover { background: var(--tint); }
+.tools a:active, .ic:active { background: var(--tint2); }
