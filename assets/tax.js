@@ -239,7 +239,9 @@
     chat: svg('<path d="M4 5h16v11H9l-5 4z"/>'),
     close: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
     suggest: svg('<path d="M12 3a6 6 0 00-3 11.2V17h6v-2.8A6 6 0 0012 3zM10 21h4"/>'),
-    ext: svg('<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>')
+    ext: svg('<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>'),
+    help: svg('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01"/>'),
+    spark: svg('<path d="M12 3l2.2 5.6L20 9.3l-4.4 3.8L17 19l-5-3.1L7 19l1.4-5.9L4 9.3l5.8-.7z"/>')
   };
 
   function chrome(active, opt) {
@@ -282,14 +284,28 @@
       $$('.panel').forEach(function (p) { p.classList.remove('open'); });
       scrim.classList.remove('on');
     }
+    function toggle(id) {
+      var p = document.getElementById(id);
+      if (!p) return;
+      var was = p.classList.contains('open');
+      closeAll();
+      if (!was) { p.classList.add('open'); scrim.classList.add('on'); }
+    }
     $$('.tab').forEach(function (t) {
-      t.addEventListener('click', function () {
-        var p = document.getElementById(t.getAttribute('data-panel'));
-        var was = p.classList.contains('open');
-        closeAll();
-        if (!was) { p.classList.add('open'); scrim.classList.add('on'); }
-      });
+      t.addEventListener('click', function () { toggle(t.getAttribute('data-panel')); });
     });
+    /* 디자인 D 데스크톱에서는 오른쪽 탭 대신 왼쪽 메뉴에 같은 항목을 둔다 */
+    var rail = $('.rail');
+    if (rail) {
+      var PANEL_ICON = [ICON.help, ICON.spark];
+      $$('.tab').forEach(function (t, i) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'rl rp';
+        b.innerHTML = '<span class="ri">' + (PANEL_ICON[i] || ICON.help) + '</span><span class="rt">' + esc(t.textContent.trim()) + '</span>';
+        b.addEventListener('click', function () { toggle(t.getAttribute('data-panel')); });
+        rail.appendChild(b);
+      });
+    }
     $$('.panel .x').forEach(function (b) { b.addEventListener('click', closeAll); });
     scrim.addEventListener('click', closeAll);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
