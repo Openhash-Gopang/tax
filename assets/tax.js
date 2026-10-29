@@ -254,6 +254,8 @@
         '<a class="rl" href="' + LINKS.platform + '" target="_blank" rel="noopener"><span class="ri"><img src="assets/navi-icon.png" alt="" onerror="this.remove()"></span><span class="rt">나비 플랫폼</span></a>' +
         '<a class="rl" href="index.html"' + cur('home') + '><span class="ri">' + ICON.home + '</span><span class="rt">홈</span></a>' +
         '<a class="rl" href="mydocs.html"' + cur('mydocs') + '><span class="ri">' + ICON.docs + '</span><span class="rt">내 서류 목록</span></a>' +
+        '<a class="rl rp" href="index.html?panel=p-how" data-panel="p-how"><span class="ri">' + ICON.help + '</span><span class="rt">사용법</span></a>' +
+        '<a class="rl rp" href="index.html?panel=p-feat" data-panel="p-feat"><span class="ri">' + ICON.spark + '</span><span class="rt">사이트의 특징</span></a>' +
       '</aside>' +
       '<header class="bar">' +
         '<a class="brand" href="index.html">' + LABEL + '</a>' +
@@ -294,18 +296,18 @@
     $$('.tab').forEach(function (t) {
       t.addEventListener('click', function () { toggle(t.getAttribute('data-panel')); });
     });
-    /* 디자인 D 데스크톱에서는 오른쪽 탭 대신 왼쪽 메뉴에 같은 항목을 둔다 */
-    var rail = $('.rail');
-    if (rail) {
-      var PANEL_ICON = [ICON.help, ICON.spark];
-      $$('.tab').forEach(function (t, i) {
-        var b = document.createElement('button');
-        b.type = 'button'; b.className = 'rl rp';
-        b.innerHTML = '<span class="ri">' + (PANEL_ICON[i] || ICON.help) + '</span><span class="rt">' + esc(t.textContent.trim()) + '</span>';
-        b.addEventListener('click', function () { toggle(t.getAttribute('data-panel')); });
-        rail.appendChild(b);
+    /* 디자인 D 데스크톱의 왼쪽 메뉴 항목(모든 페이지에 있음): 홈 화면이면 패널을 열고, 다른 페이지면 홈으로 가서 연다 */
+    $$('.rail .rp').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        if (!document.getElementById(a.getAttribute('data-panel'))) return;
+        e.preventDefault();
+        toggle(a.getAttribute('data-panel'));
       });
-    }
+    });
+    try {
+      var want = new URLSearchParams(location.search).get('panel');
+      if (want && document.getElementById(want)) toggle(want);
+    } catch (e) {}
     $$('.panel .x').forEach(function (b) { b.addEventListener('click', closeAll); });
     scrim.addEventListener('click', closeAll);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
